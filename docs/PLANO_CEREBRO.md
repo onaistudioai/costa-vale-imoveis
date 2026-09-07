@@ -1,5 +1,9 @@
 # Plano — o cérebro compartilhado
 
+> **Estado (07/09/2026): as três ondas estão implementadas.** Procedência em
+> `leitura_modelo`, aferição em `npm run aferir` (baseline 10/10 do prompt
+> `83a509bb1c39`), cérebro em `/cerebro`. 240 testes.
+
 Como os seis agentes passam a **aprender sem poder errar sobre a empresa**.
 
 O sistema hoje registra tudo e não ajusta nada. Este plano fecha esse buraco em
@@ -95,9 +99,13 @@ campo, porque errar `obrigatoria` custa caro e errar `resumo` não custa nada.
   a que quase todo sistema esquece — sem ela a pessoa corrige, o sistema erra
   igual na semana seguinte, e aí ninguém corrige mais nada.
 - Tela `/cerebro`: consultar, editar e ver de onde veio cada nota.
-- `src/cerebro/aplicar.ts`: transforma notas vigentes em dicas de prompt e em
-  ajuste limitado de peso. **Teto explícito** — uma nota não pode virar um
-  botão de calibração sem limite.
+- `src/cerebro/aplicar.ts`: transforma notas vigentes em dicas de prompt, com
+  **teto de caracteres** — acúmulo de nota não pode virar a maior parte da
+  instrução e deixar o prompt aferido em minoria.
+- **Ajuste de peso ficou de fora, e é decisão, não pendência.** Nota mexendo em
+  `scoreMinimo` ou nos pesos do roteamento é o mesmo sistema com dois botões de
+  calibração e nenhum dono. Primeiro a aferição precisa mostrar que a dica em
+  texto ajuda; se ajudar, aí faz sentido discutir peso.
 
 **Gate:** o teste do parágrafo da regra passando, e a tela funcionando com a
 equipe podendo desfazer qualquer coisa.
