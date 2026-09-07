@@ -26,10 +26,12 @@ de comentário — é topologia:
 
 - o cérebro vive num **schema Postgres separado** (`cerebro`), com migration
   própria;
-- `src/cerebro/` **não importa** `@/lib/db/schema` — nem pra ler;
-- o que sai do cérebro é **dica de texto** e **ajuste de peso limitado**, nunca
-  um valor de campo. Um teste prova isso: uma nota afirmando um preço não muda
-  o preço que o sistema responde.
+- `src/cerebro/db.ts` importa **só a conexão**, nunca o schema da empresa: o
+  cliente Drizzle de lá conhece uma tabela e nenhuma outra;
+- o que sai do cérebro é **dica de texto**, nunca um valor de campo — e vai
+  anexada sob um cabeçalho que diz ao modelo que dado de sistema vence
+  observação. Um teste prova isso: uma nota afirmando um preço continua sendo
+  texto de observação e não chega em campo nenhum.
 
 ---
 
