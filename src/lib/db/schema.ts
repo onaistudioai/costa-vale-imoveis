@@ -693,3 +693,46 @@ export const processoEscritura = pgTable(
     index("escritura_imovel_idx").on(t.idImovel),
   ],
 );
+
+// ============================================================================
+// WAVE 9 — procedência das leituras de modelo
+// ============================================================================
+
+// --- leitura_modelo ---
+// Quem leu, com qual modelo e com qual prompt. O `log_evento` responde "por que
+// esse anúncio caiu?"; esta tabela responde a pergunta que vem antes dela: "o
+// que foi lido, e por quem, pra chegar nessa conclusão?".
+//
+// Sem isto, trocar de modelo ou mexer numa linha de prompt é uma mudança
+// invisível no histórico — e "melhorou" vira opinião.
+
+export const leituraModelo = pgTable(
+  "leitura_modelo",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // `varchar` e não o enum `agente_origem` de propósito: o Agente 5 (consulta)
+    // não está lá, porque nunca escreveu em campo nenhum. Ele lê modelo como
+    // qualquer outro, então precisa caber aqui — e mexer num enum que sete
+    // tabelas usam pra acomodar uma auditoria seria o rabo abanando o cachorro.
+    agente: varchar("agente", { length: 20 }).notNull(),
+    tarefa: varchar("tarefa", { length: 20 }).notNull(),
+    modelo: varchar("modelo", { length: 120 }).notNull(),
+    // Hash do texto do prompt — versão que se mantém sozinha (ver
+    // src/agentes/procedencia.ts).
+    promptHash: varchar("prompt_hash", { length: 16 }).notNull(),
+    entrada: text("entrada").notNull(),
+    entradaHash: varchar("entrada_hash", { length: 16 }).notNull(),
+    saida: jsonb("saida"),
+    ms: integer("ms").notNull(),
+    // Preenchido quando a chamada falhou. É a linha mais valiosa da tabela: a
+    // única que conta o que deu errado antes de alguém reclamar.
+    erro: text("erro"),
+    idEvento: uuid("id_evento"),
+    criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  },
+  (t) => [
+    // A aferição lê exatamente por aqui: acerto por versão de prompt.
+    index("leitura_prompt_idx").on(t.agente, t.promptHash, t.criadoEm),
+    index("leitura_evento_idx").on(t.idEvento),
+  ],
+);

@@ -1,6 +1,7 @@
 import type { Dependencias, Mundo } from "../mundo";
 import type { IoDoNo } from "../no";
 import type { Extrator } from "@/agentes/modelo";
+import type { Leitura } from "@/agentes/procedencia";
 import type { Escrita, PedidoAprovacao } from "@/agentes/contrato";
 import type { Agente, ConfigRoteamento } from "@/tipos";
 
@@ -179,19 +180,33 @@ export function depsFalsas(
 ): {
   deps: Dependencias;
   chamadasDoModelo: () => number;
+  /** As linhas de procedência que a passada gerou. */
+  leituras: Leitura[];
 } & ReturnType<typeof mundoFalso> {
   const f = mundoFalso(over);
   let chamadas = 0;
   let i = 0;
 
-  const extrator: Extrator = (async () => {
-    chamadas += 1;
-    return extracoes[Math.min(i++, extracoes.length - 1)];
-  }) as Extrator;
+  const extrator = Object.assign(
+    (async () => {
+      chamadas += 1;
+      return extracoes[Math.min(i++, extracoes.length - 1)];
+    }) as Extrator,
+    { modelo: "modelo-de-teste", tarefa: "extracao" },
+  );
+
+  const leituras: Leitura[] = [];
 
   return {
     ...f,
-    deps: { mundo: f.mundo, io: f.io, extrator, config: CONFIG_TESTE },
+    deps: {
+      mundo: f.mundo,
+      io: f.io,
+      extrator,
+      config: CONFIG_TESTE,
+      registrarLeitura: async (l) => void leituras.push(l),
+    },
     chamadasDoModelo: () => chamadas,
+    leituras,
   };
 }

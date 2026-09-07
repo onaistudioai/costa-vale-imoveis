@@ -4,6 +4,7 @@ import type { EntradaAtendimento } from "@/agentes/atendimento";
 import type { PortasAlterador } from "@/agentes/alterador";
 import type { Anuncio, ConfigRoteamento, EstadoComercial } from "@/tipos";
 import type { Extrator } from "@/agentes/modelo";
+import type { RegistrarLeitura } from "@/agentes/procedencia";
 import type { IoDoNo } from "./no";
 import type { Evento } from "./eventos";
 
@@ -44,4 +45,9 @@ export interface Dependencias {
   io: IoDoNo;
   extrator: Extrator;
   config: ConfigRoteamento;
+  /**
+   * Onde a procedência de cada leitura é gravada. Opcional porque auditoria não
+   * é caminho crítico: os testes rodam sem ela e o grafo se comporta igual.
+   */
+  registrarLeitura?: RegistrarLeitura;
 }

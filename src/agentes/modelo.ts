@@ -31,17 +31,22 @@ const MODELOS: Record<Tarefa, string> = {
   classificacao: "llama-3.1-8b-instant",
 };
 
-export function extratorGroq(tarefa: Tarefa = "extracao"): Extrator {
-  const modelo = new ChatGroq({
-    model: process.env.GROQ_MODEL || MODELOS[tarefa],
-    temperature: 0,
-  });
+export function extratorGroq(
+  tarefa: Tarefa = "extracao",
+): Extrator & { modelo: string; tarefa: Tarefa } {
+  const nome = process.env.GROQ_MODEL || MODELOS[tarefa];
+  const modelo = new ChatGroq({ model: nome, temperature: 0 });
 
-  return async ({ schema, sistema, entrada }) => {
+  const extrair: Extrator = async ({ schema, sistema, entrada }) => {
     const estruturado = modelo.withStructuredOutput(schema);
     return (await estruturado.invoke([
       { role: "system", content: sistema },
       { role: "user", content: entrada },
     ])) as never;
   };
+
+  // O nome do modelo fica pendurado na função porque quem registra procedência
+  // (src/agentes/procedencia.ts) precisa saber quem respondeu — e nenhum agente
+  // pode saber. Ninguém além do envelope de procedência lê estes dois campos.
+  return Object.assign(extrair, { modelo: nome, tarefa });
 }

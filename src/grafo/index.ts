@@ -6,6 +6,7 @@ import { atender } from "@/agentes/atendimento";
 import { alterar } from "@/agentes/alterador";
 import type { AgenteContexto, PedidoAprovacao } from "@/agentes/contrato";
 import type { Extrator } from "@/agentes/modelo";
+import { comProcedencia } from "@/agentes/procedencia";
 import type { Agente } from "@/tipos";
 import { EstadoGrafo, type EstadoGrafoT } from "./estado";
 import { donoDoEvento, threadDoEvento } from "./eventos";
@@ -45,8 +46,17 @@ function no<A extends Agente>(
 ) {
   return async (s: EstadoGrafoT): Promise<Partial<EstadoGrafoT>> => {
     const novos: Record<string, unknown> = {};
+    // A procedência fica POR DENTRO da memoização, e a ordem é o ponto: a
+    // re-execução que a R7 exige não vira segunda linha na auditoria, pela
+    // mesma razão que não vira segunda cobrança no modelo.
     const extrair = extratorMemoizado(
-      deps.extrator,
+      deps.registrarLeitura
+        ? comProcedencia(
+            deps.extrator,
+            { agente, idEvento: s.evento.idEvento },
+            deps.registrarLeitura,
+          )
+        : deps.extrator,
       s.memo,
       `${agente}:${s.evento.idEvento}`,
       novos,

@@ -97,6 +97,7 @@ Scripts de demonstração:
 npm run varredura   # o que o tempo passou: prazos, aluguéis, cartórios
 npm run recepcao    # a mesma pessoa chegando por dois canais diferentes
 npm run perguntar -- "quanto estou gastando em mídia paga agora?"
+npm run procedencia  # qual modelo e qual versão de prompt produziram cada leitura
 ```
 
 ## As telas
@@ -137,7 +138,9 @@ Isto é um projeto de portfólio e não está pronto para produção. O que falt
 está documentado, não escondido:
 
 - **O painel não tem autenticação.** Qualquer um com o endereço aprova anúncio.
-- **O sistema não aprende.** Ele registra tudo, mas nada se ajusta sozinho.
+- **O sistema não aprende.** Ele registra tudo — inclusive, agora, qual modelo
+  e qual versão de prompt produziram cada leitura (`leitura_modelo`) — mas nada
+  se ajusta sozinho. O caminho até lá está em `docs/PLANO_CEREBRO.md`.
 - Os números de calibração (`docs/calibracao.json`) são chutes iniciais que
   precisam de operação real para afinar.
 - O webhook exige um segredo compartilhado; o agente de consulta usa um papel

@@ -8,6 +8,8 @@ import { fechar, MOTIVOS_DESFECHO, type MotivoDesfecho } from "@/regras/funil";
 import { fundir } from "@/lib/identidade-db";
 import { consultar } from "@/consulta";
 import { extratorGroq } from "@/agentes/modelo";
+import { comProcedencia } from "@/agentes/procedencia";
+import { registrarLeitura } from "@/lib/leitura-db";
 
 /**
  * Decidir um item da fila.
@@ -221,5 +223,13 @@ export async function confirmarFusao(formData: FormData) {
  * acionado. A conexão que ela usa nem tem permissão de escrever.
  */
 export async function perguntar(pergunta: string) {
-  return consultar(pergunta.slice(0, 500), extratorGroq("classificacao"));
+  // O 5 não entra no grafo, então a procedência dele se liga aqui — e ele é o
+  // único que chama o modelo duas vezes por pergunta (classificar e redigir),
+  // o que faz cada pergunta virar duas linhas de auditoria.
+  const extrair = comProcedencia(
+    extratorGroq("classificacao"),
+    { agente: "5_consulta" },
+    registrarLeitura,
+  );
+  return consultar(pergunta.slice(0, 500), extrair);
 }

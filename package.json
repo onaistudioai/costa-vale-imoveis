@@ -16,7 +16,8 @@
     "smoke": "dotenv -e .env -- tsx scripts/smoke-groq.ts",
     "varredura": "dotenv -e .env -- tsx scripts/varredura.ts",
     "perguntar": "dotenv -e .env -- tsx scripts/perguntar.ts",
-    "recepcao": "dotenv -e .env -- tsx scripts/recepcao.ts"
+    "recepcao": "dotenv -e .env -- tsx scripts/recepcao.ts",
+    "procedencia": "dotenv -e .env -- tsx scripts/procedencia.ts"
   },
   "keywords": [],
   "author": "",

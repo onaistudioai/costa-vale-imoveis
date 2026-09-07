@@ -65,6 +65,26 @@ describe("R7 — agente e gate em nós separados", () => {
     expect(final.pausa).toBeNull();
   });
 
+  it("a procedência entra uma vez só, pelo mesmo motivo que a cobrança", async () => {
+    const t = montar();
+    await t.app.invoke({ evento: t.evento }, t.config);
+    await t.app.invoke(
+      new Command({ resume: { aprovado: true, por: "fabiano" } }),
+      t.config,
+    );
+
+    // O envelope de procedência fica por dentro da memoização. Se estivesse
+    // por fora, a re-execução do nó gravaria uma segunda leitura que nunca
+    // aconteceu — e a aferição da Onda 2 contaria chamada que ninguém fez.
+    expect(t.leituras).toHaveLength(1);
+    expect(t.leituras[0]).toMatchObject({
+      agente: "1_curador",
+      modelo: "modelo-de-teste",
+      idEvento: "e1",
+      erro: null,
+    });
+  });
+
   it("negativa também retoma: o grafo segue, o anúncio é que não sobe", async () => {
     const t = montar();
     await t.app.invoke({ evento: t.evento }, t.config);

@@ -4,6 +4,7 @@ import { pool } from "@/lib/db";
 import { CONFIG_ROTEAMENTO } from "@/lib/config";
 import { extratorGroq } from "@/agentes/modelo";
 import { ioDb, jaProcessado, marcarProcessado } from "@/agentes/contexto-db";
+import { registrarLeitura } from "@/lib/leitura-db";
 import { construirGrafo } from "./index";
 import { mundoDb } from "./mundo-db";
 import { Despachante } from "./despachante";
@@ -27,6 +28,7 @@ function compilar(checkpointer: PostgresSaver) {
     io: ioDb,
     extrator: extratorGroq(),
     config: CONFIG_ROTEAMENTO,
+    registrarLeitura,
   }).compile({ checkpointer });
 }
 
