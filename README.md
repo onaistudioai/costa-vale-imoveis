@@ -98,6 +98,10 @@ npm run seed              # estoque de demonstração de Sorocaba
 npm run dev               # http://localhost:3000
 ```
 
+Os testes de integração usam um **banco separado** (`TEST_DATABASE_URL`, um
+branch do Neon). Sem essa variável eles se marcam como pulados — a suíte apaga
+tabelas a cada teste, e apontá-la para o banco de trabalho apaga o estoque.
+
 A suíte roda **sem chave de API e sem banco** — os testes de unidade injetam um
 extrator falso, e os de integração se marcam como `skipped` quando não há
 `DATABASE_URL`.

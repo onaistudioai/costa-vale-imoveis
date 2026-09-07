@@ -161,4 +161,6 @@ Nenhum destes é negociável:
 - [ ] duas semanas de sombra com concordância medida
 - [ ] canal de saída no número da empresa, nunca no pessoal de ninguém
 - [ ] aviso de escalação fora do painel
+- [x] banco de teste separado do banco de operação (`TEST_DATABASE_URL`; sem
+      ela os testes de integração se recusam a rodar)
 - [ ] plano de volta: como desligar um agente sem derrubar o resto
