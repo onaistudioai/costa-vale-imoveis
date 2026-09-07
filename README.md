@@ -70,6 +70,14 @@ entregar o botão de editar: o pior que uma nota errada faz é o agente responde
 pior — nenhuma nota altera um contrato. E nada é rasurado: corrigir escreve
 embaixo, com data e autor, como averbação de matrícula.
 
+**Mensagem fora do assunto não vira lead.** Número errado, spam e pergunta de
+outro ramo recebem uma resposta fixa, escrita em código — o que a imobiliária
+faz e não faz não é coisa que o modelo decide na hora. E nada é gravado: sem
+isso o funil enche de gente que nunca quis comprar nada, e a fila ordenada por
+urgência perde o sentido. A exceção é a proposta atípica (permuta, litígio):
+essa escala, porque **calar um cliente de verdade custa mais que responder a um
+engano**.
+
 **O sistema nunca fecha um atendimento sozinho.** Passado o tempo de silêncio,
 o caso sobe ao topo da fila pedindo um desfecho de alguém. Fechar por
 inatividade é escrever "não quis" onde a verdade é "não sei".

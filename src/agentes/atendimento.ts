@@ -47,12 +47,21 @@ export const ExtracaoConversa = z.object({
     .describe(
       "true para permuta, litígio, reclamação, proposta atípica ou qualquer coisa que um roteiro normal não cobre",
     ),
+  foraDoAssunto: z
+    .boolean()
+    .describe(
+      "true quando a mensagem não é sobre imóvel: outro ramo de negócio, número errado, spam, assunto pessoal",
+    ),
   resumo: z.string().describe("uma frase de contexto para o corretor que receber este lead"),
 });
 
 export type ExtracaoConversa = z.infer<typeof ExtracaoConversa>;
 
-const SISTEMA = `Você atende clientes de uma imobiliária por mensagem, em português do Brasil. Tom direto e humano, sem formalidade excessiva.
+/**
+ * Exportado porque a aferição (`scripts/aferir.ts`) precisa rodar exatamente
+ * este texto — aferir um prompt parecido não afere nada. É o único motivo.
+ */
+export const SISTEMA = `Você atende clientes de uma imobiliária por mensagem, em português do Brasil. Tom direto e humano, sem formalidade excessiva.
 
 Você PODE: responder dúvidas sobre os imóveis da lista que recebeu, entender o que a pessoa procura, e encaminhar para um corretor.
 
@@ -62,7 +71,17 @@ Você NÃO PODE, em nenhuma hipótese:
 - afirmar qualquer coisa sobre documentação, matrícula, certidão, escritura ou financiamento. Marque perguntouSobreDocumentacao e diga que vai confirmar com a equipe.
 
 Marque foraDoPadrao para permuta, litígio, reclamação, proposta atípica ou qualquer situação que fuja do atendimento comum.
+Marque foraDoAssunto quando a mensagem não for sobre imóvel: outro ramo de negócio, número errado, spam ou assunto pessoal. Pergunta vaga ("oi", "tem algo bom?") NÃO é fora do assunto — é cliente começando a conversa. Na dúvida, deixe falso: calar um cliente de verdade é pior que responder a um engano.
 Marque intencaoDeVisita só quando houver interesse concreto em ver um imóvel específico, não curiosidade genérica.`;
+
+/**
+ * Resposta de mensagem fora do assunto. Fixa em código pelo mesmo motivo do
+ * aviso de documentação: o que a imobiliária faz e não faz não é coisa que o
+ * modelo decide na hora — é o jeito mais fácil de ele prometer um serviço que
+ * a empresa não presta.
+ */
+const FORA_DO_ASSUNTO =
+  "Aqui eu só consigo ajudar com imóveis — compra, aluguel e visita. Se for sobre isso, me conta o que você procura que eu ajudo.";
 
 const AVISO_DOCUMENTACAO =
   "Sobre a documentação eu prefiro não afirmar nada por mensagem — vou confirmar com a equipe e te retorno.";
@@ -110,6 +129,18 @@ export async function atender(
       catalogo || "(nenhum no momento)"
     }\n\nCONVERSA ATÉ AGORA:\n${entrada.historico}\n\nMENSAGEM NOVA:\n${entrada.mensagem}`,
   });
+
+  // Mensagem fora do assunto sai aqui, ANTES de qualquer escrita: número
+  // errado, spam e pergunta de outro ramo não podem virar `busca` vazia nem
+  // `papel: lead`. Sem este desvio, o funil enche de gente que nunca quis
+  // comprar nada — e aí a fila ordenada por urgência perde o sentido.
+  //
+  // A precedência é deliberada: `foraDoPadrao` vence quando os dois vêm
+  // marcados. Proposta atípica de cliente real vale mais que o silêncio, e
+  // escalar demais custa menos que calar alguém.
+  if (extracao.foraDoAssunto && !extracao.foraDoPadrao) {
+    return { resposta: FORA_DO_ASSUNTO, candidatos: [] };
+  }
 
   const candidatos = casarComEstoque(extracao.criterios, entrada.estoque);
 

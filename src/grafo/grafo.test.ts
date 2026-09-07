@@ -37,6 +37,7 @@ const conversa = (over: Partial<ExtracaoConversa> = {}): ExtracaoConversa => ({
   imovelDeInteresse: "i1",
   perguntouSobreDocumentacao: false,
   foraDoPadrao: false,
+  foraDoAssunto: false,
   resumo: "quer visitar a casa do Centro",
   ...over,
 });

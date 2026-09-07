@@ -11,6 +11,7 @@ const extracao = (over: Partial<ExtracaoConversa> = {}): ExtracaoConversa => ({
   imovelDeInteresse: null,
   perguntouSobreDocumentacao: false,
   foraDoPadrao: false,
+  foraDoAssunto: false,
   resumo: "quer 2 quartos perto de escola até 400",
   ...over,
 });
@@ -163,5 +164,65 @@ describe("Agente 4 — N3 versus N4, a bifurcação", () => {
       ),
     );
     expect(r.leadQualificado?.resumo).toBe("quer visitar sábado de manhã");
+  });
+});
+
+describe("Agente 4 — mensagem fora do assunto", () => {
+  const fora = (over: Partial<ExtracaoConversa> = {}) =>
+    extracao({ foraDoAssunto: true, ...over });
+
+  // O teste que protege o funil: sem ele, número errado e spam viram lead e
+  // são ordenados em /funil junto com quem quer comprar.
+  it("não grava nada — nem busca, nem papel", async () => {
+    const { ctx, escritas } = contextoFalso("4_atendimento");
+    await atender(
+      ctx,
+      entrada({ mensagem: "vocês fazem seguro de carro?" }),
+      extratorFalso(fora()),
+    );
+    expect(escritas).toEqual([]);
+  });
+
+  it("não qualifica nem escala, mesmo com o modelo achando que há visita", async () => {
+    const { ctx, pedidos } = contextoFalso("4_atendimento");
+    const r = await atender(
+      ctx,
+      entrada({ mensagem: "é a pizzaria?" }),
+      extratorFalso(fora({ intencaoDeVisita: true, imovelDeInteresse: "i1" })),
+    );
+    expect(r.leadQualificado).toBeUndefined();
+    expect(r.escalacao).toBeUndefined();
+    // Número errado não é decisão de ninguém: enviar pro painel seria tratar
+    // engano como se fosse permuta.
+    expect(pedidos).toHaveLength(0);
+    expect(r.candidatos).toEqual([]);
+  });
+
+  it("a resposta é a fixa, não a que o modelo escreveu", async () => {
+    const { ctx } = contextoFalso("4_atendimento");
+    const r = await atender(
+      ctx,
+      entrada({ mensagem: "vocês vendem seguro?" }),
+      extratorFalso(fora({ resposta: "Vendemos sim! Nosso seguro custa R$ 200 por mês." })),
+    );
+    expect(r.resposta).toContain("só consigo ajudar com imóveis");
+    expect(r.resposta).not.toContain("R$ 200");
+  });
+
+  it("permuta vence fora do assunto: cliente atípico escala, não é calado", async () => {
+    const { ctx, pedidos } = contextoFalso("4_atendimento");
+    const r = await atender(
+      ctx,
+      entrada({ mensagem: "queria dar meu carro como parte do pagamento" }),
+      extratorFalso(fora({ foraDoPadrao: true })),
+    );
+    expect(pedidos[0]).toMatchObject({ tipo: "escalacao_n3" });
+    expect(r.escalacao).toMatchObject({ motivo: "conversa_fora_do_padrao" });
+  });
+
+  it("mensagem normal continua gravando busca e papel", async () => {
+    const { ctx, escritas } = contextoFalso("4_atendimento");
+    await atender(ctx, entrada(), extratorFalso(extracao()));
+    expect(escritas.map((e) => e.campo).sort()).toEqual(["busca", "papel"]);
   });
 });
