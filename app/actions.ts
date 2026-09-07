@@ -11,6 +11,7 @@ import { extratorGroq } from "@/agentes/modelo";
 import { comProcedencia } from "@/agentes/procedencia";
 import { registrarLeitura } from "@/lib/leitura-db";
 import { escrever, versionar } from "@/cerebro/db";
+import { quemEsta } from "@/lib/acesso";
 
 /**
  * Decidir um item da fila.
@@ -22,7 +23,12 @@ import { escrever, versionar } from "@/cerebro/db";
 export async function decidir(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const aprovado = formData.get("decisao") === "aprovar";
-  const por = String(formData.get("por") ?? "").trim() || "não identificado";
+  // Quem decidiu é quem entrou no painel, não o que a pessoa digitou: campo de
+  // auditoria preenchido à mão é teatro de auditoria. O `proxy.ts` garante que
+  // ninguém chega aqui sem login, então o campo do formulário só é alcançável
+  // de fora de uma requisição — teste e script.
+  const por =
+    (await quemEsta()) ?? (String(formData.get("por") ?? "").trim() || "não identificado");
   const motivo = String(formData.get("motivo") ?? "").trim() || null;
 
   if (!id) throw new Error("pedido sem id");
@@ -241,7 +247,7 @@ export async function perguntar(pergunta: string) {
  */
 export async function anotar(formData: FormData) {
   const texto = String(formData.get("texto") ?? "").trim();
-  const autor = String(formData.get("autor") ?? "").trim();
+  const autor = (await quemEsta()) ?? String(formData.get("autor") ?? "").trim();
   if (!texto || !autor) return;
 
   await escrever({
@@ -273,8 +279,7 @@ export async function versionarNota(formData: FormData) {
       estado,
       texto: texto || undefined,
       motivo: motivo || undefined,
-      // Sem senha no painel ainda, o autor da ação é a equipe (ver README).
-      autor: "equipe",
+      autor: (await quemEsta()) ?? "não identificado",
     });
   } catch (e) {
     const { redirect } = await import("next/navigation");

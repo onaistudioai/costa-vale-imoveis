@@ -84,7 +84,8 @@ obedece prazo interno ensina a equipe a ignorar o alerta inteiro.
 ```bash
 npm install
 cp .env.example .env      # preencha DATABASE_URL e GROQ_API_KEY
-npm run db:migrate        # aplica as 6 migrations
+npm run db:migrate        # aplica as migrations
+npm run acesso -- seunome # gera a senha do painel e a linha do PAINEL_USUARIOS
 npm run seed              # estoque de demonstração de Sorocaba
 npm run dev               # http://localhost:3000
 ```
@@ -121,6 +122,11 @@ npm run aferir       # o conjunto de referência contra o modelo real
 | `/cerebro` | O que a equipe entendeu com a operação — editável, e sem poder mexer em cadastro |
 | `/imovel/[id]` | "Por que esse anúncio caiu?" — o histórico completo |
 
+O painel inteiro exige senha (`proxy.ts`), e **quem decidiu é quem entrou** — o
+campo de auditoria deixou de ser um texto que a pessoa preenche com o nome que
+quiser. As rotas de máquina (`/api/eventos`, `/api/varredura`) ficam de fora da
+senha porque têm o próprio segredo: cron não faz login.
+
 ## Stack
 
 LangGraph.js · LangChain · Groq · Next.js (App Router) · Drizzle ORM ·
@@ -153,7 +159,7 @@ vez — o que fala com cliente é sempre o último — e a supervisão em regime
 O sistema roda inteiro, mas ainda não foi endurecido para produção. O que falta
 está documentado, não escondido:
 
-- **O painel não tem autenticação.** Qualquer um com o endereço aprova anúncio.
+- Não há aviso fora do painel: a escalação de 24h só é verdade de um lado.
 - **O sistema não aprende sozinho, e isso é escolha.** Ele registra qual modelo
   e qual versão de prompt produziram cada leitura (`leitura_modelo`), afere a
   leitura contra um conjunto de referência (`npm run aferir`) e guarda o que a

@@ -18,7 +18,8 @@
     "perguntar": "dotenv -e .env -- tsx scripts/perguntar.ts",
     "recepcao": "dotenv -e .env -- tsx scripts/recepcao.ts",
     "procedencia": "dotenv -e .env -- tsx scripts/procedencia.ts",
-    "aferir": "dotenv -e .env -- tsx scripts/aferir.ts"
+    "aferir": "dotenv -e .env -- tsx scripts/aferir.ts",
+    "acesso": "tsx scripts/acesso.ts"
   },
   "keywords": [],
   "author": "",

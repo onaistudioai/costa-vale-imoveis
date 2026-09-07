@@ -155,7 +155,7 @@ implantação real e não está feito.
 
 Nenhum destes é negociável:
 
-- [ ] painel com autenticação
+- [x] painel com autenticação (`npm run acesso`, senha por pessoa)
 - [ ] a pessoa que supervisiona, com nome e horário combinados
 - [ ] números de partida congelados
 - [ ] duas semanas de sombra com concordância medida

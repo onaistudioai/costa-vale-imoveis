@@ -138,7 +138,6 @@ export default async function Cerebro({
             required
             style={{ flex: "1 1 22rem" }}
           />
-          <input type="text" name="autor" placeholder="seu nome" required />
           <button type="submit">Propor</button>
         </form>
       </section>

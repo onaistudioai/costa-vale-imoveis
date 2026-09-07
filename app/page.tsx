@@ -143,7 +143,7 @@ export default async function Fila() {
 
             <form className="acoes" action={decidir}>
               <input type="hidden" name="id" value={p.id} />
-              <input type="text" name="por" placeholder="quem está decidindo" required />
+
               <input type="text" name="motivo" placeholder="motivo (opcional)" />
               <button className="primario" name="decisao" value="aprovar" type="submit">
                 Aprovar
