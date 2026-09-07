@@ -736,3 +736,29 @@ export const leituraModelo = pgTable(
     index("leitura_evento_idx").on(t.idEvento),
   ],
 );
+
+// ============================================================================
+// WAVE 10 — o que o sistema mandou (ou teria mandado)
+// ============================================================================
+
+// --- mensagem_enviada ---
+// Toda tentativa de falar com alguém de fora vira linha aqui, inclusive quando
+// o canal está desligado. Antes disto, a mensagem da oferta sumia num
+// `console.log` e o sistema marcava "enviado" mesmo assim — ninguém tinha como
+// conferir o que a imobiliária disse a um cliente ou a um corretor.
+
+export const mensagemEnviada = pgTable(
+  "mensagem_enviada",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    destino: varchar("destino", { length: 40 }),
+    texto: text("texto").notNull(),
+    // "entregue" quando o canal aceitou, "sem_canal" quando não há para onde
+    // mandar, "falha" quando o canal recusou. Os três são estados diferentes e
+    // pedem providências diferentes.
+    estado: varchar("estado", { length: 20 }).notNull(),
+    motivo: text("motivo"),
+    criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  },
+  (t) => [index("mensagem_criado_idx").on(t.criadoEm)],
+);

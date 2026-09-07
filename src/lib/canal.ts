@@ -1,3 +1,5 @@
+import { db, schema } from "@/lib/db";
+
 /**
  * A saída de mensagem do sistema — cliente e corretor.
  *
@@ -16,7 +18,7 @@ export async function enviarMensagem(
   const base = process.env.WHATSAPP_BRIDGE_URL;
 
   if (!base || !telefone) {
-    console.log(`[canal:log] ${telefone ?? "sem telefone"} <- ${texto}`);
+    await registrar(telefone, texto, "sem_canal", base ? "sem telefone" : "canal desligado");
     return false;
   }
 
@@ -29,12 +31,39 @@ export async function enviarMensagem(
       signal: AbortSignal.timeout(10_000),
     });
     if (!r.ok) throw new Error(`bridge respondeu ${r.status}`);
+    await registrar(telefone, texto, "entregue", null);
     return true;
   } catch (e) {
     // Canal fora do ar não derruba o fluxo: a decisão já está no banco e o
     // pedido já está na fila do painel. Some a mensagem, não o trabalho.
-    console.error(`[canal:falha] ${telefone}: ${(e as Error).message}`);
+    await registrar(telefone, texto, "falha", (e as Error).message);
     return false;
+  }
+}
+
+/**
+ * O registro do que saiu — ou do que teria saído.
+ *
+ * Guardar a tentativa mesmo com o canal desligado é o ponto: é assim que dá
+ * pra conferir o texto de uma oferta antes de existir WhatsApp ligado, e é
+ * assim que "o sistema avisou o corretor" deixa de ser afirmação e vira linha
+ * com hora. Falha de gravação nunca derruba o envio.
+ */
+async function registrar(
+  destino: string | null | undefined,
+  texto: string,
+  estado: "entregue" | "sem_canal" | "falha",
+  motivo: string | null,
+) {
+  try {
+    await db.insert(schema.mensagemEnviada).values({
+      destino: destino ?? null,
+      texto,
+      estado,
+      motivo,
+    });
+  } catch (e) {
+    console.warn("[canal] mensagem não registrada:", e);
   }
 }
 

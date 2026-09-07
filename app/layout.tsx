@@ -22,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/escrituras">Escrituras</Link>
             <Link href="/alterar">Alterar</Link>
             <Link href="/consulta">Perguntar</Link>
+            <Link href="/mensagens">Mensagens</Link>
             <Link href="/cerebro">Cérebro</Link>
           </nav>
         </header>

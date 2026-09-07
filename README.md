@@ -128,6 +128,7 @@ npm run simular      # o custo do lead sem dono, com a rotina real do corretor
 | `/escrituras` | A esteira até a matrícula, separada por de quem é a bola |
 | `/alterar` | Pedido de alteração de cadastro em texto livre |
 | `/consulta` | Perguntas da equipe sobre os relatórios |
+| `/mensagens` | Tudo que o sistema falou — ou teria falado, com o canal desligado |
 | `/cerebro` | O que a equipe entendeu com a operação — editável, e sem poder mexer em cadastro |
 | `/imovel/[id]` | "Por que esse anúncio caiu?" — o histórico completo |
 
@@ -168,7 +169,8 @@ vez — o que fala com cliente é sempre o último — e a supervisão em regime
 O sistema roda inteiro, mas ainda não foi endurecido para produção. O que falta
 está documentado, não escondido:
 
-- Não há aviso fora do painel: a escalação de 24h só é verdade de um lado.
+- Nenhum canal está ligado: as mensagens ficam registradas em `/mensagens` com
+  o texto exato, mas não saem enquanto `WHATSAPP_BRIDGE_URL` não existir.
 - **O sistema não aprende sozinho, e isso é escolha.** Ele registra qual modelo
   e qual versão de prompt produziram cada leitura (`leitura_modelo`), afere a
   leitura contra um conjunto de referência (`npm run aferir`) e guarda o que a

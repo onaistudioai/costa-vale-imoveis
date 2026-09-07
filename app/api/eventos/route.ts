@@ -4,6 +4,10 @@ import { z } from "zod";
 import { processarEvento } from "@/grafo/runtime";
 import { chaveDeLock, GATILHOS, threadDoEvento } from "@/grafo/eventos";
 import { pedirFusao, receber } from "@/lib/recepcao";
+import { responderComoCorretor } from "@/lib/resposta-corretor";
+import { extratorGroq } from "@/agentes/modelo";
+import { comProcedencia } from "@/agentes/procedencia";
+import { registrarLeitura } from "@/lib/leitura-db";
 
 /**
  * A entrada do mundo no sistema.
@@ -70,6 +74,24 @@ export async function POST(req: Request) {
   const { contato, ...resto } = corpo.data;
 
   const mensagem = String(resto.payload?.mensagem ?? "").slice(0, LIMITE_MENSAGEM);
+
+  // Corretor ANTES de cliente. Sem esta pergunta, o "pego esse" de um corretor
+  // vira um cadastro de cliente novo, o atendimento pergunta que imóvel ele
+  // procura, e a oferta fica pendente até expirar.
+  if (contato && mensagem) {
+    const r = await responderComoCorretor(
+      contato.identificador,
+      mensagem,
+      comProcedencia(
+        extratorGroq("classificacao"),
+        { agente: "3_roteador", idEvento },
+        registrarLeitura,
+      ),
+    );
+    if (r.tipo !== "nao_e_corretor") {
+      return NextResponse.json({ idEvento, corretor: r.corretor, desfecho: r.tipo, resposta: r.resposta });
+    }
+  }
 
   // Identidade ANTES do grafo: a chave de lock do Agente 4 é o cliente, então
   // "quem é essa pessoa?" precisa estar respondida aqui e não lá dentro.

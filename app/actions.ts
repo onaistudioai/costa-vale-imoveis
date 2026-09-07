@@ -12,6 +12,7 @@ import { comProcedencia } from "@/agentes/procedencia";
 import { registrarLeitura } from "@/lib/leitura-db";
 import { escrever, versionar } from "@/cerebro/db";
 import { quemEsta } from "@/lib/acesso";
+import { decidirOferta } from "@/lib/oferta";
 
 /**
  * Decidir um item da fila.
@@ -105,36 +106,16 @@ export async function responderOferta(formData: FormData) {
   if (!id) throw new Error("oferta sem id");
 
   const [oferta] = await db
-    .select()
+    .select({ destinatario: schema.aprovacao.destinatario })
     .from(schema.aprovacao)
     .where(eq(schema.aprovacao.id, id));
 
   if (!oferta) throw new Error("oferta não encontrada");
 
-  // Já expirou ou já foi respondida: a primeira resposta vale. Chegar tarde é
-  // o caso normal aqui, não erro.
-  if (oferta.estado !== "pendente") {
-    revalidatePath("/");
-    return;
-  }
-
-  await db
-    .update(schema.aprovacao)
-    .set({
-      estado: aceito ? "aprovado" : "negado",
-      decididoPor: oferta.destinatario ?? "corretor",
-      decididoEm: new Date(),
-      motivo: aceito ? null : "passou a vez",
-    })
-    .where(eq(schema.aprovacao.id, id));
-
-  if (oferta.threadId) {
-    await retomar(oferta.threadId, {
-      aprovado: aceito,
-      por: oferta.destinatario ?? "corretor",
-      motivo: aceito ? undefined : "recusou",
-    });
-  }
+  // O mesmo caminho que a resposta do corretor pelo WhatsApp usa. Duas cópias
+  // da mesma decisão dariam dois comportamentos, e o dia em que divergissem
+  // seria o dia em que o lead ficaria com dois donos ou nenhum.
+  await decidirOferta(id, aceito, oferta.destinatario ?? "corretor");
 
   revalidatePath("/");
 }
