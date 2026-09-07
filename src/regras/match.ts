@@ -6,6 +6,13 @@ export interface ImovelOfertavel {
   preco: number | null;
   bairro: string | null;
   cidade: string;
+  /**
+   * Opcional porque nenhuma regra de casamento usa endereço. Existe pra quando
+   * o agente precisa PERGUNTAR qual imóvel — dois apartamentos do mesmo bairro
+   * separados por cinquenta centavos são indistinguíveis por tipo e preço, e a
+   * pergunta "qual deles?" sem endereço não ajuda ninguém a responder.
+   */
+  endereco?: string | null;
   estadoAnuncio: EstadoAnuncio;
   estadoComercial: EstadoComercial;
 }

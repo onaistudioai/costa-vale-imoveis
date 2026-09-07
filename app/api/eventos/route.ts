@@ -120,6 +120,11 @@ export async function POST(req: Request) {
     estado: r.pausa ? "aguardando_decisao" : "concluido",
     pedido: r.pausa?.pedido ?? null,
     resposta: r.resposta ?? null,
+    // O desfecho do Agente 6. Sem isto, "achei dois imóveis com esse nome, qual
+    // deles?" chegava pela API como `concluido` sem pedido e sem resposta —
+    // idêntico a "deu tudo certo, nada a fazer". O painel via o motivo; quem
+    // integra, não.
+    alteracao: r.alteracao ?? null,
     trilha: r.trilha,
     cliente: recepcao
       ? {

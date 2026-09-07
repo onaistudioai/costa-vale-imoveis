@@ -83,6 +83,29 @@ Marque intencaoDeVisita só quando houver interesse concreto em ver um imóvel e
 const FORA_DO_ASSUNTO =
   "Aqui eu só consigo ajudar com imóveis — compra, aluguel e visita. Se for sobre isso, me conta o que você procura que eu ajudo.";
 
+/** Como um imóvel é citado numa pergunta ao cliente: o que o distingue. */
+const citar = (i: ImovelOfertavel) =>
+  [i.endereco, i.bairro, i.preco !== null ? `R$ ${i.preco.toLocaleString("pt-BR")}` : null]
+    .filter(Boolean)
+    .join(" · ");
+
+/**
+ * A pergunta que substitui a promessa.
+ *
+ * O Agente 6 já resolve ambiguidade assim há tempo — "encontrei 2 registros,
+ * qual deles?" — e não havia motivo pro 4 fazer diferente com o cliente.
+ */
+function perguntarQual(candidatos: ImovelOfertavel[]): string {
+  if (candidatos.length === 0) {
+    return "Não tenho nada com esse perfil disponível agora. Me diz o que é essencial pra você (bairro, valor, quantos quartos) que eu procuro e te aviso.";
+  }
+  if (candidatos.length === 1) {
+    return `Antes de eu chamar o corretor, confirma pra mim: é o ${citar(candidatos[0]!)}?`;
+  }
+  const lista = candidatos.slice(0, 4).map((c) => `- ${citar(c)}`).join("\n");
+  return `Tenho ${candidatos.length} que batem com o que você falou:\n${lista}\n\nQual deles?`;
+}
+
 const AVISO_DOCUMENTACAO =
   "Sobre a documentação eu prefiro não afirmar nada por mensagem — vou confirmar com a equipe e te retorno.";
 
@@ -186,6 +209,20 @@ export async function atender(
     candidatos.some((c) => c.idImovel === extracao.imovelDeInteresse)
       ? extracao.imovelDeInteresse
       : null;
+
+  // Quer visitar, mas não dá pra saber o quê.
+  //
+  // É aqui que nasce o pior defeito que este agente pode ter, e ele é
+  // invisível: o modelo escreve "vou encaminhar ao corretor", o sistema não
+  // encaminha nada (sem imóvel identificado não há handoff), e ninguém fica
+  // sabendo — não gera linha na fila, não gera erro, não gera alerta. Só gera
+  // um cliente esperando uma ligação que não vem.
+  //
+  // A defesa é a mesma dos outros limites: **a resposta sai de código.** Se o
+  // sistema não vai agir, o modelo não pode dizer que agiu.
+  if (extracao.intencaoDeVisita && !alvo) {
+    return { resposta: perguntarQual(candidatos), candidatos: candidatos.map((c) => c.idImovel) };
+  }
 
   if (extracao.intencaoDeVisita && alvo) {
     // O funil sobe aqui, e não na recepção: qualificar é o que aconteceu de

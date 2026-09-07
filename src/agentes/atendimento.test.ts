@@ -226,3 +226,73 @@ describe("Agente 4 — mensagem fora do assunto", () => {
     expect(escritas.map((e) => e.campo).sort()).toEqual(["busca", "papel"]);
   });
 });
+
+describe("Agente 4 — quer visitar, mas não dá pra saber o quê", () => {
+  const gemeos = [
+    imovel({ idImovel: "apto51", preco: 846000, endereco: "Rua Padre Luiz Bianchi, 120 - apto 51", bairro: "Campolim" }),
+    imovel({ idImovel: "apto52", preco: 846000.5, endereco: "Rua Padre Luiz Bianchi, 120 - apto 52", bairro: "Campolim" }),
+  ];
+
+  const querVisitar = extracao({ intencaoDeVisita: true, imovelDeInteresse: null });
+
+  // O defeito que este bloco existe pra impedir é invisível: o modelo promete
+  // encaminhar, o sistema não encaminha (sem imóvel não há handoff), e nada
+  // registra isso. Só sobra um cliente esperando ligação que não vem.
+  it("nunca promete encaminhar quando não vai encaminhar", async () => {
+    const { ctx } = contextoFalso("4_atendimento");
+    const r = await atender(
+      ctx,
+      entrada({ estoque: gemeos }),
+      extratorFalso(
+        extracao({
+          ...querVisitar,
+          resposta: "Vou encaminhar seu pedido ao corretor e ele entra em contato!",
+        }),
+      ),
+    );
+
+    expect(r.leadQualificado).toBeUndefined();
+    expect(r.resposta).not.toContain("encaminhar");
+    expect(r.resposta).toContain("Qual deles?");
+  });
+
+  it("dois gêmeos: a pergunta cita o endereço, que é o que os distingue", async () => {
+    const { ctx } = contextoFalso("4_atendimento");
+    const r = await atender(ctx, entrada({ estoque: gemeos }), extratorFalso(querVisitar));
+
+    // Tipo e preço não separam nada aqui — são cinquenta centavos de diferença.
+    expect(r.resposta).toContain("apto 51");
+    expect(r.resposta).toContain("apto 52");
+  });
+
+  it("um candidato só: confirma antes de chamar o corretor, não adivinha", async () => {
+    const { ctx } = contextoFalso("4_atendimento");
+    const r = await atender(
+      ctx,
+      entrada({ estoque: [gemeos[0]!] }),
+      extratorFalso(querVisitar),
+    );
+    expect(r.resposta).toContain("confirma");
+    expect(r.leadQualificado).toBeUndefined();
+  });
+
+  it("nenhum candidato: diz que não tem, em vez de prometer procurar por aí", async () => {
+    const { ctx } = contextoFalso("4_atendimento");
+    const r = await atender(
+      ctx,
+      entrada({ estoque: [] }),
+      extratorFalso(querVisitar),
+    );
+    expect(r.resposta).toContain("Não tenho nada com esse perfil");
+  });
+
+  it("com imóvel identificado, o caminho normal continua: qualifica e passa adiante", async () => {
+    const { ctx } = contextoFalso("4_atendimento");
+    const r = await atender(
+      ctx,
+      entrada({ estoque: gemeos }),
+      extratorFalso(extracao({ intencaoDeVisita: true, imovelDeInteresse: "apto52" })),
+    );
+    expect(r.leadQualificado).toMatchObject({ idImovel: "apto52" });
+  });
+});

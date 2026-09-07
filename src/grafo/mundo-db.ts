@@ -249,6 +249,7 @@ export const mundoDb: Mundo = {
         preco: num(i.preco),
         bairro: i.bairro,
         cidade: i.cidade,
+        endereco: i.endereco,
         estadoAnuncio: i.estadoAnuncio,
         estadoComercial: i.estadoComercial,
       })),
