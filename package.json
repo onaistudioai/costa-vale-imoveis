@@ -19,7 +19,8 @@
     "recepcao": "dotenv -e .env -- tsx scripts/recepcao.ts",
     "procedencia": "dotenv -e .env -- tsx scripts/procedencia.ts",
     "aferir": "dotenv -e .env -- tsx scripts/aferir.ts",
-    "acesso": "tsx scripts/acesso.ts"
+    "acesso": "tsx scripts/acesso.ts",
+    "simular": "tsx scripts/simular.ts"
   },
   "keywords": [],
   "author": "",

@@ -115,6 +115,7 @@ npm run recepcao    # a mesma pessoa chegando por dois canais diferentes
 npm run perguntar -- "quanto estou gastando em mídia paga agora?"
 npm run procedencia  # qual modelo e qual versão de prompt produziram cada leitura
 npm run aferir       # o conjunto de referência contra o modelo real
+npm run simular      # o custo do lead sem dono, com a rotina real do corretor
 ```
 
 ## As telas
