@@ -39,7 +39,11 @@ export const ExtracaoLaudo = z.object({
 
 export type ExtracaoLaudo = z.infer<typeof ExtracaoLaudo>;
 
-const SISTEMA = `Você lê laudos de vistoria de imóveis escritos por vendedores em campo, em português do Brasil.
+/**
+ * Exportado porque a aferição (`scripts/aferir.ts`) precisa rodar exatamente
+ * este texto — aferir um prompt parecido não afere nada. É o único motivo.
+ */
+export const SISTEMA = `Você lê laudos de vistoria de imóveis escritos por vendedores em campo, em português do Brasil.
 
 Extraia as pendências mencionadas. Regras:
 - Uma pendência só é "resolvida" se o texto afirma que foi concluída. Promessa, previsão ou intenção NÃO é resolução.

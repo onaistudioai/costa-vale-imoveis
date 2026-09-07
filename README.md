@@ -98,6 +98,7 @@ npm run varredura   # o que o tempo passou: prazos, aluguéis, cartórios
 npm run recepcao    # a mesma pessoa chegando por dois canais diferentes
 npm run perguntar -- "quanto estou gastando em mídia paga agora?"
 npm run procedencia  # qual modelo e qual versão de prompt produziram cada leitura
+npm run aferir       # o conjunto de referência contra o modelo real
 ```
 
 ## As telas
