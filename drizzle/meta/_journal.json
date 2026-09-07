@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1788671155523,
+      "tag": "0000_busy_young_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788671858145,
+      "tag": "0001_queda_automatica_do_anuncio",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788673201784,
+      "tag": "0002_idempotencia_aprovacao",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788706000449,
+      "tag": "0003_thread_do_gate_e_log_idempotente",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788727918400,
+      "tag": "0004_aceite_do_corretor",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788730135623,
+      "tag": "0005_oferta_no_expediente",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788743506386,
+      "tag": "0006_identidade_funil_locacao_escritura",
+      "breakpoints": true
+    }
+  ]
+}

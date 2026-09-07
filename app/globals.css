@@ -1,0 +1,305 @@
+:root {
+  --fundo: #fbfaf8;
+  --papel: #ffffff;
+  --borda: #e4e0d8;
+  --texto: #1c1a17;
+  --fraco: #6d675e;
+  --urgente: #a8321e;
+  --ok: #2f6b45;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #16150f;
+    --papel: #1e1c17;
+    --borda: #33302a;
+    --texto: #f2efe8;
+    --fraco: #a49d92;
+    --urgente: #e5866f;
+    --ok: #7fc79b;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--borda);
+}
+
+.marca {
+  font-weight: 620;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+main {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+h1 {
+  font-size: 1.4rem;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.25rem;
+}
+
+.sub {
+  color: var(--fraco);
+  margin: 0 0 2rem;
+}
+
+.card {
+  background: var(--papel);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 0.9rem;
+}
+
+.card.urgente {
+  border-left: 3px solid var(--urgente);
+}
+
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.tipo {
+  font-weight: 600;
+}
+
+.meta {
+  color: var(--fraco);
+  font-size: 0.85rem;
+}
+
+.custo {
+  color: var(--urgente);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.corpo {
+  color: var(--fraco);
+  margin: 0.35rem 0 0.9rem;
+}
+
+.acoes {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+button {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: 7px;
+  border: 1px solid var(--borda);
+  background: var(--papel);
+  color: var(--texto);
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--fraco);
+}
+
+button.primario {
+  background: var(--texto);
+  color: var(--fundo);
+  border-color: var(--texto);
+}
+
+input[type="text"] {
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borda);
+  border-radius: 7px;
+  background: var(--fundo);
+  color: var(--texto);
+  flex: 1;
+  min-width: 8rem;
+}
+
+.vazio {
+  color: var(--fraco);
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.linha-tempo {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.linha-tempo li {
+  display: flex;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--borda);
+}
+
+.quando {
+  color: var(--fraco);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  min-width: 9.5rem;
+}
+
+.quem {
+  color: var(--fraco);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.estados {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0 0 1.5rem;
+}
+
+.pill {
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.85rem;
+  background: var(--papel);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--borda);
+}
+
+th {
+  color: var(--fraco);
+  font-weight: 500;
+}
+
+/* --- Wave 8: funil, locação e escrituras --- */
+
+.pill.alerta {
+  border-color: var(--urgente);
+  color: var(--urgente);
+}
+
+.pill.ok {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.lista {
+  color: var(--fraco);
+  padding-left: 1.1rem;
+  margin: 0.4rem 0 0;
+}
+
+.lista li {
+  margin-bottom: 0.35rem;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 2rem 0 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+section > .sub {
+  margin-bottom: 1rem;
+}
+
+.card header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  margin: 0.2rem 0;
+  color: var(--fraco);
+}
+
+select {
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borda);
+  border-radius: 7px;
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+/* Esteira da escritura: o passo atual em destaque, o resto apagado. */
+.esteira {
+  list-style: none;
+  padding: 0;
+  margin: 0.6rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.esteira li {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  color: var(--fraco);
+}
+
+.esteira li.feito {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.esteira li.atual {
+  border-color: var(--texto);
+  color: var(--texto);
+  font-weight: 600;
+}
+
+/* De quem é a bola: acionável e acompanhamento não podem parecer a mesma coisa. */
+.card.acompanhar {
+  border-left: 3px solid var(--borda);
+  opacity: 0.85;
+}

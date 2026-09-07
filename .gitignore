@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+.vitest/
+.next/
+.next/
+next-env.d.ts
+
+# Artefato de build do TypeScript — regerado a cada `tsc`.
+tsconfig.tsbuildinfo
+
+# Material de referência de terceiros (PDF do guia de agentes). Fica na pasta
+# de trabalho, mas não no repositório: é material de outra pessoa e pesa 1 MB.
+guia regra pra criação de agente/

@@ -1,0 +1,1577 @@
+{
+  "id": "1fce1cf6-faec-4db8-a9d4-63f0a8a570f5",
+  "prevId": "77755941-0577-452c-8942-b8eba7f47049",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.agenda": {
+      "name": "agenda",
+      "schema": "",
+      "columns": {
+        "id_evento": {
+          "name": "id_evento",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_corretor": {
+          "name": "id_corretor",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_imovel": {
+          "name": "id_imovel",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_cliente": {
+          "name": "id_cliente",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "inicio": {
+          "name": "inicio",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fim": {
+          "name": "fim",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'reservado'"
+        }
+      },
+      "indexes": {
+        "agenda_corretor_idx": {
+          "name": "agenda_corretor_idx",
+          "columns": [
+            {
+              "expression": "id_corretor",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "inicio",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "agenda_id_corretor_corretor_id_corretor_fk": {
+          "name": "agenda_id_corretor_corretor_id_corretor_fk",
+          "tableFrom": "agenda",
+          "tableTo": "corretor",
+          "columnsFrom": [
+            "id_corretor"
+          ],
+          "columnsTo": [
+            "id_corretor"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "agenda_id_imovel_imovel_id_imovel_fk": {
+          "name": "agenda_id_imovel_imovel_id_imovel_fk",
+          "tableFrom": "agenda",
+          "tableTo": "imovel",
+          "columnsFrom": [
+            "id_imovel"
+          ],
+          "columnsTo": [
+            "id_imovel"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "agenda_id_cliente_cliente_id_cliente_fk": {
+          "name": "agenda_id_cliente_cliente_id_cliente_fk",
+          "tableFrom": "agenda",
+          "tableTo": "cliente",
+          "columnsFrom": [
+            "id_cliente"
+          ],
+          "columnsTo": [
+            "id_cliente"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.anuncio": {
+      "name": "anuncio",
+      "schema": "",
+      "columns": {
+        "id_anuncio": {
+          "name": "id_anuncio",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_imovel": {
+          "name": "id_imovel",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canal": {
+          "name": "canal",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "estado_anuncio",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'no_ar'"
+        },
+        "midia_paga": {
+          "name": "midia_paga",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "data_publicacao": {
+          "name": "data_publicacao",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "data_remocao": {
+          "name": "data_remocao",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custo_acumulado": {
+          "name": "custo_acumulado",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        }
+      },
+      "indexes": {
+        "anuncio_imovel_idx": {
+          "name": "anuncio_imovel_idx",
+          "columns": [
+            {
+              "expression": "id_imovel",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "anuncio_id_imovel_imovel_id_imovel_fk": {
+          "name": "anuncio_id_imovel_imovel_id_imovel_fk",
+          "tableFrom": "anuncio",
+          "tableTo": "imovel",
+          "columnsFrom": [
+            "id_imovel"
+          ],
+          "columnsTo": [
+            "id_imovel"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.aprovacao": {
+      "name": "aprovacao",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_aprovacao",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entidade": {
+          "name": "entidade",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_entidade": {
+          "name": "id_entidade",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "solicitado_por_agente": {
+          "name": "solicitado_por_agente",
+          "type": "agente_origem",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_aprovacao",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pendente'"
+        },
+        "contexto": {
+          "name": "contexto",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "id_evento": {
+          "name": "id_evento",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "destinatario": {
+          "name": "destinatario",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expira_em": {
+          "name": "expira_em",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enviar_em": {
+          "name": "enviar_em",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enviado_em": {
+          "name": "enviado_em",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decidido_por": {
+          "name": "decidido_por",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decidido_em": {
+          "name": "decidido_em",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "motivo": {
+          "name": "motivo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "aprovacao_pendente_idx": {
+          "name": "aprovacao_pendente_idx",
+          "columns": [
+            {
+              "expression": "estado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "criado_em",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "aprovacao_expira_idx": {
+          "name": "aprovacao_expira_idx",
+          "columns": [
+            {
+              "expression": "estado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "expira_em",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "aprovacao_por_evento_idx": {
+          "name": "aprovacao_por_evento_idx",
+          "columns": [
+            {
+              "expression": "id_evento",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tipo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id_entidade",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.busca": {
+      "name": "busca",
+      "schema": "",
+      "columns": {
+        "id_busca": {
+          "name": "id_busca",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_cliente": {
+          "name": "id_cliente",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "valor_min": {
+          "name": "valor_min",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valor_max": {
+          "name": "valor_max",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo_imovel": {
+          "name": "tipo_imovel",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bairros_desejados": {
+          "name": "bairros_desejados",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "texto_original": {
+          "name": "texto_original",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "busca_cliente_idx": {
+          "name": "busca_cliente_idx",
+          "columns": [
+            {
+              "expression": "id_cliente",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "busca_id_cliente_cliente_id_cliente_fk": {
+          "name": "busca_id_cliente_cliente_id_cliente_fk",
+          "tableFrom": "busca",
+          "tableTo": "cliente",
+          "columnsFrom": [
+            "id_cliente"
+          ],
+          "columnsTo": [
+            "id_cliente"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cliente": {
+      "name": "cliente",
+      "schema": "",
+      "columns": {
+        "id_cliente": {
+          "name": "id_cliente",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cpf_cnpj": {
+          "name": "cpf_cnpj",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telefone": {
+          "name": "telefone",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origem_canal": {
+          "name": "origem_canal",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_entrada": {
+          "name": "data_entrada",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.corretor": {
+      "name": "corretor",
+      "schema": "",
+      "columns": {
+        "id_corretor": {
+          "name": "id_corretor",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "telefone": {
+          "name": "telefone",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "comissao_percentual": {
+          "name": "comissao_percentual",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "regioes_atuacao": {
+          "name": "regioes_atuacao",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dominio_corretor": {
+      "name": "dominio_corretor",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_corretor": {
+          "name": "id_corretor",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_imovel": {
+          "name": "id_imovel",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nivel": {
+          "name": "nivel",
+          "type": "nivel_dominio",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "dominio_corretor_par_idx": {
+          "name": "dominio_corretor_par_idx",
+          "columns": [
+            {
+              "expression": "id_corretor",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id_imovel",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "dominio_imovel_idx": {
+          "name": "dominio_imovel_idx",
+          "columns": [
+            {
+              "expression": "id_imovel",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "dominio_corretor_id_corretor_corretor_id_corretor_fk": {
+          "name": "dominio_corretor_id_corretor_corretor_id_corretor_fk",
+          "tableFrom": "dominio_corretor",
+          "tableTo": "corretor",
+          "columnsFrom": [
+            "id_corretor"
+          ],
+          "columnsTo": [
+            "id_corretor"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "dominio_corretor_id_imovel_imovel_id_imovel_fk": {
+          "name": "dominio_corretor_id_imovel_imovel_id_imovel_fk",
+          "tableFrom": "dominio_corretor",
+          "tableTo": "imovel",
+          "columnsFrom": [
+            "id_imovel"
+          ],
+          "columnsTo": [
+            "id_imovel"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.evento_processado": {
+      "name": "evento_processado",
+      "schema": "",
+      "columns": {
+        "id_evento": {
+          "name": "id_evento",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agente": {
+          "name": "agente",
+          "type": "agente_origem",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processado_em": {
+          "name": "processado_em",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.imovel": {
+      "name": "imovel",
+      "schema": "",
+      "columns": {
+        "id_imovel": {
+          "name": "id_imovel",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "preco": {
+          "name": "preco",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endereco": {
+          "name": "endereco",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bairro": {
+          "name": "bairro",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cidade": {
+          "name": "cidade",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pontos_referencia": {
+          "name": "pontos_referencia",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_proprietario": {
+          "name": "id_proprietario",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_corretor_captador": {
+          "name": "id_corretor_captador",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estado_operacional": {
+          "name": "estado_operacional",
+          "type": "estado_operacional",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'captado'"
+        },
+        "estado_comercial": {
+          "name": "estado_comercial",
+          "type": "estado_comercial",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'disponivel'"
+        },
+        "estado_anuncio": {
+          "name": "estado_anuncio",
+          "type": "estado_anuncio",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'sem_anuncio'"
+        },
+        "data_captacao": {
+          "name": "data_captacao",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "imovel_estados_idx": {
+          "name": "imovel_estados_idx",
+          "columns": [
+            {
+              "expression": "estado_operacional",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "estado_comercial",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "estado_anuncio",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "imovel_id_proprietario_cliente_id_cliente_fk": {
+          "name": "imovel_id_proprietario_cliente_id_cliente_fk",
+          "tableFrom": "imovel",
+          "tableTo": "cliente",
+          "columnsFrom": [
+            "id_proprietario"
+          ],
+          "columnsTo": [
+            "id_cliente"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "imovel_id_corretor_captador_corretor_id_corretor_fk": {
+          "name": "imovel_id_corretor_captador_corretor_id_corretor_fk",
+          "tableFrom": "imovel",
+          "tableTo": "corretor",
+          "columnsFrom": [
+            "id_corretor_captador"
+          ],
+          "columnsTo": [
+            "id_corretor"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "anuncio_exige_pronto_e_disponivel": {
+          "name": "anuncio_exige_pronto_e_disponivel",
+          "value": "\"imovel\".\"estado_anuncio\" <> 'no_ar' OR (\"imovel\".\"estado_operacional\" = 'pronto' AND \"imovel\".\"estado_comercial\" = 'disponivel')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.laudo": {
+      "name": "laudo",
+      "schema": "",
+      "columns": {
+        "id_laudo": {
+          "name": "id_laudo",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_imovel": {
+          "name": "id_imovel",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_autor": {
+          "name": "id_autor",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "texto_estado": {
+          "name": "texto_estado",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "texto_documentacao": {
+          "name": "texto_documentacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "texto_pendencias": {
+          "name": "texto_pendencias",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extracao_estruturada": {
+          "name": "extracao_estruturada",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data": {
+          "name": "data",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "laudo_imovel_idx": {
+          "name": "laudo_imovel_idx",
+          "columns": [
+            {
+              "expression": "id_imovel",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "laudo_id_imovel_imovel_id_imovel_fk": {
+          "name": "laudo_id_imovel_imovel_id_imovel_fk",
+          "tableFrom": "laudo",
+          "tableTo": "imovel",
+          "columnsFrom": [
+            "id_imovel"
+          ],
+          "columnsTo": [
+            "id_imovel"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.log_evento": {
+      "name": "log_evento",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "agente_origem": {
+          "name": "agente_origem",
+          "type": "agente_origem",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entidade": {
+          "name": "entidade",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_entidade": {
+          "name": "id_entidade",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "campo": {
+          "name": "campo",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "valor_anterior": {
+          "name": "valor_anterior",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valor_novo": {
+          "name": "valor_novo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "aprovado_por": {
+          "name": "aprovado_por",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_evento": {
+          "name": "id_evento",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "log_entidade_idx": {
+          "name": "log_entidade_idx",
+          "columns": [
+            {
+              "expression": "entidade",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id_entidade",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "log_por_evento_idx": {
+          "name": "log_por_evento_idx",
+          "columns": [
+            {
+              "expression": "id_evento",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "campo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id_entidade",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.papel": {
+      "name": "papel",
+      "schema": "",
+      "columns": {
+        "id_papel": {
+          "name": "id_papel",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_cliente": {
+          "name": "id_cliente",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_imovel": {
+          "name": "id_imovel",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "papel": {
+          "name": "papel",
+          "type": "papel_cliente",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {
+        "papel_cliente_idx": {
+          "name": "papel_cliente_idx",
+          "columns": [
+            {
+              "expression": "id_cliente",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ativo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "papel_id_cliente_cliente_id_cliente_fk": {
+          "name": "papel_id_cliente_cliente_id_cliente_fk",
+          "tableFrom": "papel",
+          "tableTo": "cliente",
+          "columnsFrom": [
+            "id_cliente"
+          ],
+          "columnsTo": [
+            "id_cliente"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "papel_id_imovel_imovel_id_imovel_fk": {
+          "name": "papel_id_imovel_imovel_id_imovel_fk",
+          "tableFrom": "papel",
+          "tableTo": "imovel",
+          "columnsFrom": [
+            "id_imovel"
+          ],
+          "columnsTo": [
+            "id_imovel"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transacao": {
+      "name": "transacao",
+      "schema": "",
+      "columns": {
+        "id_transacao": {
+          "name": "id_transacao",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_imovel": {
+          "name": "id_imovel",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_cliente_comprador": {
+          "name": "id_cliente_comprador",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_corretor": {
+          "name": "id_corretor",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "valor_final": {
+          "name": "valor_final",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_fechamento": {
+          "name": "data_fechamento",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "comissao_paga": {
+          "name": "comissao_paga",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "etapa": {
+          "name": "etapa",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "transacao_imovel_idx": {
+          "name": "transacao_imovel_idx",
+          "columns": [
+            {
+              "expression": "id_imovel",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "transacao_id_imovel_imovel_id_imovel_fk": {
+          "name": "transacao_id_imovel_imovel_id_imovel_fk",
+          "tableFrom": "transacao",
+          "tableTo": "imovel",
+          "columnsFrom": [
+            "id_imovel"
+          ],
+          "columnsTo": [
+            "id_imovel"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "transacao_id_cliente_comprador_cliente_id_cliente_fk": {
+          "name": "transacao_id_cliente_comprador_cliente_id_cliente_fk",
+          "tableFrom": "transacao",
+          "tableTo": "cliente",
+          "columnsFrom": [
+            "id_cliente_comprador"
+          ],
+          "columnsTo": [
+            "id_cliente"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transacao_id_corretor_corretor_id_corretor_fk": {
+          "name": "transacao_id_corretor_corretor_id_corretor_fk",
+          "tableFrom": "transacao",
+          "tableTo": "corretor",
+          "columnsFrom": [
+            "id_corretor"
+          ],
+          "columnsTo": [
+            "id_corretor"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.vinculo_lead_corretor": {
+      "name": "vinculo_lead_corretor",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_cliente": {
+          "name": "id_cliente",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_corretor": {
+          "name": "id_corretor",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "ultima_interacao": {
+          "name": "ultima_interacao",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {
+        "vinculo_cliente_idx": {
+          "name": "vinculo_cliente_idx",
+          "columns": [
+            {
+              "expression": "id_cliente",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ativo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "vinculo_lead_corretor_id_cliente_cliente_id_cliente_fk": {
+          "name": "vinculo_lead_corretor_id_cliente_cliente_id_cliente_fk",
+          "tableFrom": "vinculo_lead_corretor",
+          "tableTo": "cliente",
+          "columnsFrom": [
+            "id_cliente"
+          ],
+          "columnsTo": [
+            "id_cliente"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "vinculo_lead_corretor_id_corretor_corretor_id_corretor_fk": {
+          "name": "vinculo_lead_corretor_id_corretor_corretor_id_corretor_fk",
+          "tableFrom": "vinculo_lead_corretor",
+          "tableTo": "corretor",
+          "columnsFrom": [
+            "id_corretor"
+          ],
+          "columnsTo": [
+            "id_corretor"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.agente_origem": {
+      "name": "agente_origem",
+      "schema": "public",
+      "values": [
+        "1_curador",
+        "2_guardiao",
+        "3_roteador",
+        "4_atendimento",
+        "humano",
+        "regra"
+      ]
+    },
+    "public.estado_anuncio": {
+      "name": "estado_anuncio",
+      "schema": "public",
+      "values": [
+        "sem_anuncio",
+        "no_ar",
+        "pausado",
+        "removido"
+      ]
+    },
+    "public.estado_aprovacao": {
+      "name": "estado_aprovacao",
+      "schema": "public",
+      "values": [
+        "pendente",
+        "aprovado",
+        "negado",
+        "expirado"
+      ]
+    },
+    "public.estado_comercial": {
+      "name": "estado_comercial",
+      "schema": "public",
+      "values": [
+        "disponivel",
+        "em_negociacao",
+        "em_processo_venda",
+        "fechado",
+        "arquivado"
+      ]
+    },
+    "public.estado_operacional": {
+      "name": "estado_operacional",
+      "schema": "public",
+      "values": [
+        "captado",
+        "em_preparacao",
+        "pronto",
+        "com_pendencia",
+        "reprovado"
+      ]
+    },
+    "public.nivel_dominio": {
+      "name": "nivel_dominio",
+      "schema": "public",
+      "values": [
+        "captou",
+        "ja_visitou",
+        "conhece_regiao"
+      ]
+    },
+    "public.papel_cliente": {
+      "name": "papel_cliente",
+      "schema": "public",
+      "values": [
+        "proprietario",
+        "comprador",
+        "inquilino",
+        "lead"
+      ]
+    },
+    "public.tipo_aprovacao": {
+      "name": "tipo_aprovacao",
+      "schema": "public",
+      "values": [
+        "subir_anuncio",
+        "derrubar_midia",
+        "liberar_reprovado",
+        "escalacao_n3",
+        "aceite_corretor"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

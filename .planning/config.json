@@ -1,0 +1,253 @@
+{
+  "projeto": "costa-vale-imoveis",
+  "fase_atual": 8,
+  "fase_nome": "Operacao 24h e agente de consulta",
+  "spec": "PROJECT_SPEC.md",
+  "plano": "PLANO_EXECUTIVO.md",
+  "agentes": {
+    "1_curador": {
+      "tipo": "reativo",
+      "nivel": 3,
+      "llm": true
+    },
+    "2_guardiao": {
+      "tipo": "deliberativo",
+      "nivel": 3,
+      "llm": true
+    },
+    "3_roteador": {
+      "tipo": "reativo",
+      "nivel": 4,
+      "llm": false,
+      "envelope": [
+        "score_minimo",
+        "horizonte_agenda_horas",
+        "estado_comercial_mudou"
+      ]
+    },
+    "4_atendimento": {
+      "tipo": "deliberativo",
+      "nivel": 3,
+      "llm": true
+    },
+    "5_consulta": {
+      "tipo": "puxado",
+      "nivel": 1,
+      "llm": true,
+      "somente_leitura": true
+    },
+    "6_alterador": {
+      "tipo": "reativo",
+      "nivel": 2,
+      "llm": true,
+      "dono_de_campo": null,
+      "nota": "nao escreve: propoe o de->para e a escrita sai assinada por humano"
+    }
+  },
+  "acoes_n2": [
+    "subir_anuncio",
+    "liberar_reprovado",
+    "derrubar_midia"
+  ],
+  "coordenacao": {
+    "lock_escopo": "id_imovel",
+    "lock_escopo_excecoes": {
+      "4_atendimento": "id_cliente"
+    },
+    "idempotencia_por_evento": true,
+    "gatilhos": {
+      "laudo.criado": "1_curador",
+      "preco.alterado": "1_curador",
+      "transacao.criada": "2_guardiao",
+      "transacao.atualizada": "2_guardiao",
+      "documento.negociacao": "2_guardiao",
+      "lead.qualificado": "3_roteador",
+      "mensagem.recebida": "4_atendimento",
+      "aprovacao.decidida": "origem_do_pedido"
+    },
+    "concorrencia": {
+      "por_agente": {
+        "1_curador": 3,
+        "2_guardiao": 3,
+        "3_roteador": 6,
+        "4_atendimento": 10
+      },
+      "prioridade": [
+        "4_atendimento",
+        "3_roteador",
+        "2_guardiao",
+        "1_curador"
+      ]
+    }
+  },
+  "roteamento": {
+    "janela_vinculo_dias": 30,
+    "horizonte_agenda_horas": 48,
+    "score_minimo": 40,
+    "pesos": {
+      "captou": 100,
+      "ja_visitou": 60,
+      "conhece_regiao": 25,
+      "disponibilidade_imediata": 40,
+      "carga_baixa": 15
+    },
+    "expediente": {
+      "inicio": "07:30",
+      "fim": "19:00",
+      "dias_uteis": "seg-sab",
+      "duracao_min": 60,
+      "passo_min": 30
+    },
+    "prazo_aceite_min": 5,
+    "max_ofertas": 3
+  },
+  "aprovacao": {
+    "canal": "painel_unico",
+    "gates": [
+      "subir_anuncio",
+      "derrubar_midia",
+      "liberar_reprovado"
+    ],
+    "sla_horas": 24
+  },
+  "laudo": {
+    "campos": [
+      "texto_estado",
+      "texto_documentacao",
+      "texto_pendencias"
+    ]
+  },
+  "stack": {
+    "orquestracao": "langgraph-js",
+    "agente_unico": "langchain",
+    "app": "nextjs",
+    "banco": "postgres-neon"
+  },
+  "modelos": {
+    "provedor": "groq",
+    "extracao": "openai/gpt-oss-120b",
+    "classificacao": "llama-3.1-8b-instant"
+  },
+  "waves": {
+    "max_agentes_simultaneos": 4,
+    "1": {
+      "nome": "Fundacao",
+      "timeout_min": 210,
+      "partes": [
+        "1.1",
+        "1.2",
+        "1.3",
+        "1.4"
+      ]
+    },
+    "2": {
+      "nome": "Estoque e roteamento",
+      "timeout_min": 180,
+      "partes": [
+        "2.1",
+        "2.2",
+        "2.3"
+      ],
+      "depende_de": [
+        1
+      ]
+    },
+    "3": {
+      "nome": "Atendimento",
+      "timeout_min": 150,
+      "partes": [
+        "3.1"
+      ],
+      "depende_de": [
+        2
+      ]
+    },
+    "4": {
+      "nome": "Superficie humana",
+      "timeout_min": 120,
+      "partes": [
+        "4.1"
+      ],
+      "depende_de": [
+        3
+      ]
+    },
+    "5": {
+      "nome": "Producao",
+      "timeout_min": 150,
+      "partes": [
+        "5.1",
+        "5.2",
+        "5.3"
+      ],
+      "depende_de": [
+        4
+      ]
+    },
+    "6": {
+      "nome": "Distribuicao pra equipe",
+      "timeout_min": 120,
+      "partes": [
+        "6.1",
+        "6.2",
+        "6.3"
+      ],
+      "depende_de": [
+        5
+      ]
+    },
+    "7": {
+      "nome": "Operacao 24h",
+      "timeout_min": 150,
+      "partes": [
+        "7.1",
+        "7.2",
+        "7.3"
+      ],
+      "depende_de": [
+        6
+      ]
+    }
+  },
+  "canal": {
+    "provedor": "whatsapp-mcp (bridge local)",
+    "env": "WHATSAPP_BRIDGE_URL",
+    "sem_env": "log",
+    "producao": "planejada, nao executada"
+  },
+  "identidade": {
+    "limite_sugestao": 60,
+    "janela_dias": 7,
+    "nota": "probabilistico nunca funde sozinho; vira pedido de fusao"
+  },
+  "funil": {
+    "estados": [
+      "aberto",
+      "pendente",
+      "fechado"
+    ],
+    "teto_silencio_dias": {
+      "primeiro_contato": 30,
+      "qualificado": 21,
+      "visita_agendada": 7,
+      "visita_feita": 10,
+      "proposta": 5,
+      "negociacao": 5
+    },
+    "nota": "sistema nunca fecha sozinho: estourado volta pra aberto pedindo desfecho"
+  },
+  "locacao": {
+    "multa_atraso_percent": 2,
+    "juros_mes_percent": 1,
+    "taxa_admin_percent": 10,
+    "regua_cobranca_dias": [
+      -3,
+      0,
+      3,
+      7,
+      15,
+      30
+    ],
+    "nota": "reajuste nunca automatico: o indice vem de fora e o valor se negocia"
+  }
+}

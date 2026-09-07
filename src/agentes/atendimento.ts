@@ -1,0 +1,183 @@
+import { z } from "zod";
+import { casarComEstoque, type ImovelOfertavel } from "@/regras/match";
+import type { AgenteContexto } from "./contrato";
+import type { Extrator } from "./modelo";
+
+/**
+ * Agente 4 — Atendimento 24/7 e Qualificação.
+ *
+ * Deliberativo, N3 (PROJECT_SPEC seção 10). Única porta de entrada, e é ele
+ * quem casa o que o cliente quer com o estoque — o contexto que o match
+ * precisa (o histórico inteiro, incluindo o que o cliente descartou e por quê)
+ * já está na mão dele.
+ *
+ * Os três limites da seção 4 não são pedidos ao modelo, são código:
+ *  - não agenda: nunca escreve em `agenda`; entrega ao Agente 3 pela aresta.
+ *  - não fala preço de imóvel em negociação: `casarComEstoque` filtra estado
+ *    antes de qualquer coisa, mesmo que o chamador passe estoque sujo.
+ *  - não promete documentação: pergunta sobre documento nunca é respondida
+ *    pelo modelo; vira escalação.
+ *
+ * N3 na prática: caso fora do padrão vai pro painel, NÃO pro Agente 3. É esta
+ * bifurcação que separa N3 de N4.
+ */
+
+export const ExtracaoConversa = z.object({
+  resposta: z
+    .string()
+    .describe("o que responder ao cliente agora, em português do Brasil, tom direto"),
+  criterios: z.object({
+    valorMin: z.number().nullable(),
+    valorMax: z.number().nullable(),
+    tipoImovel: z.string().nullable().describe("casa, apartamento, terreno, sala..."),
+    bairrosDesejados: z.array(z.string()),
+  }),
+  intencaoDeVisita: z
+    .boolean()
+    .describe("true quando o cliente pede pra ver um imóvel ou falar com corretor"),
+  imovelDeInteresse: z
+    .string()
+    .nullable()
+    .describe("id do imóvel sobre o qual ele demonstrou interesse concreto"),
+  perguntouSobreDocumentacao: z
+    .boolean()
+    .describe("true se pediu garantia sobre matrícula, certidão, escritura ou financiamento"),
+  foraDoPadrao: z
+    .boolean()
+    .describe(
+      "true para permuta, litígio, reclamação, proposta atípica ou qualquer coisa que um roteiro normal não cobre",
+    ),
+  resumo: z.string().describe("uma frase de contexto para o corretor que receber este lead"),
+});
+
+export type ExtracaoConversa = z.infer<typeof ExtracaoConversa>;
+
+const SISTEMA = `Você atende clientes de uma imobiliária por mensagem, em português do Brasil. Tom direto e humano, sem formalidade excessiva.
+
+Você PODE: responder dúvidas sobre os imóveis da lista que recebeu, entender o que a pessoa procura, e encaminhar para um corretor.
+
+Você NÃO PODE, em nenhuma hipótese:
+- marcar visita, confirmar horário ou dizer que agendou. Quem agenda é o corretor. Você diz que vai encaminhar.
+- falar de imóvel que não está na lista que você recebeu. Se perguntarem de outro, diga que vai verificar.
+- afirmar qualquer coisa sobre documentação, matrícula, certidão, escritura ou financiamento. Marque perguntouSobreDocumentacao e diga que vai confirmar com a equipe.
+
+Marque foraDoPadrao para permuta, litígio, reclamação, proposta atípica ou qualquer situação que fuja do atendimento comum.
+Marque intencaoDeVisita só quando houver interesse concreto em ver um imóvel específico, não curiosidade genérica.`;
+
+const AVISO_DOCUMENTACAO =
+  "Sobre a documentação eu prefiro não afirmar nada por mensagem — vou confirmar com a equipe e te retorno.";
+
+export interface EntradaAtendimento {
+  idCliente: string;
+  idBusca: string;
+  canal: string;
+  historico: string;
+  mensagem: string;
+  /** Estoque bruto. `casarComEstoque` filtra o que não pode ser oferecido. */
+  estoque: ImovelOfertavel[];
+}
+
+export type SaidaAtendimento = {
+  resposta: string;
+  candidatos: string[];
+  /** Preenchido só quando qualifica: é o payload do handoff pro Agente 3 (R4). */
+  leadQualificado?: { idCliente: string; idImovel: string; resumo: string };
+  escalacao?: { motivo: string };
+};
+
+export async function atender(
+  ctx: AgenteContexto<"4_atendimento">,
+  entrada: EntradaAtendimento,
+  extrair: Extrator,
+): Promise<SaidaAtendimento> {
+  const ofertavel = entrada.estoque.filter(
+    (i) => i.estadoAnuncio === "no_ar" && i.estadoComercial === "disponivel",
+  );
+
+  const catalogo = ofertavel
+    .map(
+      (i) =>
+        `- ${i.idImovel} | ${i.tipo} | ${i.bairro ?? "sem bairro"} | ${
+          i.preco !== null ? `R$ ${i.preco}` : "preço a confirmar"
+        }`,
+    )
+    .join("\n");
+
+  const extracao = await extrair({
+    schema: ExtracaoConversa,
+    sistema: SISTEMA,
+    entrada: `IMÓVEIS DISPONÍVEIS (só estes existem para você):\n${
+      catalogo || "(nenhum no momento)"
+    }\n\nCONVERSA ATÉ AGORA:\n${entrada.historico}\n\nMENSAGEM NOVA:\n${entrada.mensagem}`,
+  });
+
+  const candidatos = casarComEstoque(extracao.criterios, entrada.estoque);
+
+  await ctx.escrever({
+    campo: "busca",
+    idEntidade: entrada.idBusca,
+    valorNovo: JSON.stringify({ ...extracao.criterios, textoOriginal: entrada.mensagem }),
+  });
+
+  await ctx.escrever({
+    campo: "papel",
+    idEntidade: entrada.idCliente,
+    valorNovo: "lead",
+  });
+
+  let resposta = extracao.resposta;
+
+  // Limite 3, em código: promessa sobre documentação nunca sai do modelo.
+  if (extracao.perguntouSobreDocumentacao) {
+    resposta = `${resposta}\n\n${AVISO_DOCUMENTACAO}`;
+  }
+
+  // Comportamento N3: fora do padrão fala com humano diretamente, EM VEZ DE
+  // acionar outro agente. Nada de handoff pro Agente 3 aqui.
+  if (extracao.foraDoPadrao) {
+    await ctx.pedirAprovacao({
+      tipo: "escalacao_n3",
+      entidade: "cliente",
+      idEntidade: entrada.idCliente,
+      contexto: {
+        motivo: "conversa_fora_do_padrao",
+        canal: entrada.canal,
+        resumo: extracao.resumo,
+        mensagem: entrada.mensagem,
+      },
+    });
+    return { resposta, candidatos: candidatos.map((c) => c.idImovel), escalacao: { motivo: "conversa_fora_do_padrao" } };
+  }
+
+  // Qualificação: interesse concreto num imóvel que de fato pode ser oferecido.
+  const alvo =
+    extracao.imovelDeInteresse &&
+    candidatos.some((c) => c.idImovel === extracao.imovelDeInteresse)
+      ? extracao.imovelDeInteresse
+      : null;
+
+  if (extracao.intencaoDeVisita && alvo) {
+    // O funil sobe aqui, e não na recepção: qualificar é o que aconteceu de
+    // fato nesta conversa. `etapaMaxima` guarda isso pra sempre — se a pessoa
+    // sumir depois, ela reaparece na fila como quem já quis visitar, não como
+    // quem só perguntou o preço.
+    await ctx.escrever({
+      campo: "atendimento",
+      idEntidade: entrada.idCliente,
+      valorAnterior: "primeiro_contato",
+      valorNovo: "qualificado",
+    });
+
+    return {
+      resposta,
+      candidatos: candidatos.map((c) => c.idImovel),
+      leadQualificado: {
+        idCliente: entrada.idCliente,
+        idImovel: alvo,
+        resumo: extracao.resumo,
+      },
+    };
+  }
+
+  return { resposta, candidatos: candidatos.map((c) => c.idImovel) };
+}
