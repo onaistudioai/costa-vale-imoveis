@@ -5,6 +5,7 @@ import type { PortasAlterador } from "@/agentes/alterador";
 import type { Anuncio, ConfigRoteamento, EstadoComercial } from "@/tipos";
 import type { Extrator } from "@/agentes/modelo";
 import type { RegistrarLeitura } from "@/agentes/procedencia";
+import type { NotaRow } from "@/cerebro/schema";
 import type { IoDoNo } from "./no";
 import type { Evento } from "./eventos";
 
@@ -50,4 +51,10 @@ export interface Dependencias {
    * é caminho crítico: os testes rodam sem ela e o grafo se comporta igual.
    */
   registrarLeitura?: RegistrarLeitura;
+  /**
+   * As observações da equipe que valem pra este agente. Opcional pelo mesmo
+   * motivo da procedência: cérebro fora do ar é agente sem dica, não agente
+   * parado.
+   */
+  notasDoCerebro?: (agente: string) => Promise<NotaRow[]>;
 }

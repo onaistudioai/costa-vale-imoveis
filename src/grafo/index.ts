@@ -7,6 +7,7 @@ import { alterar } from "@/agentes/alterador";
 import type { AgenteContexto, PedidoAprovacao } from "@/agentes/contrato";
 import type { Extrator } from "@/agentes/modelo";
 import { comProcedencia } from "@/agentes/procedencia";
+import { comCerebro } from "@/cerebro/aplicar";
 import type { Agente } from "@/tipos";
 import { EstadoGrafo, type EstadoGrafoT } from "./estado";
 import { donoDoEvento, threadDoEvento } from "./eventos";
@@ -49,14 +50,21 @@ function no<A extends Agente>(
     // A procedência fica POR DENTRO da memoização, e a ordem é o ponto: a
     // re-execução que a R7 exige não vira segunda linha na auditoria, pela
     // mesma razão que não vira segunda cobrança no modelo.
+    const comAuditoria = deps.registrarLeitura
+      ? comProcedencia(
+          deps.extrator,
+          { agente, idEvento: s.evento.idEvento },
+          deps.registrarLeitura,
+        )
+      : deps.extrator;
+
+    // O cérebro fica POR FORA da procedência: assim o hash registrado é o do
+    // prompt que o modelo recebeu de verdade, com as notas dentro — e ligar
+    // uma nota aparece como versão nova na aferição, que é justamente a
+    // pergunta a responder ("a nota ajudou?").
+    const notas = deps.notasDoCerebro ? await deps.notasDoCerebro(agente) : [];
     const extrair = extratorMemoizado(
-      deps.registrarLeitura
-        ? comProcedencia(
-            deps.extrator,
-            { agente, idEvento: s.evento.idEvento },
-            deps.registrarLeitura,
-          )
-        : deps.extrator,
+      comCerebro(comAuditoria, notas),
       s.memo,
       `${agente}:${s.evento.idEvento}`,
       novos,

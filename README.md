@@ -63,6 +63,13 @@ campo em comum. O sistema reconhece pelo miolo do apelido, mas o palpite vira
 uma pergunta no painel, nunca uma escrita — porque **duplicar é chato e fundir
 errado é vazamento**: mostra a negociação de um cliente para outro.
 
+**O cérebro guarda o que entendemos, nunca o que é verdade.** As observações da
+equipe vivem num schema Postgres separado, entram no prompt marcadas como
+observação, e perdem de qualquer dado do cadastro. É isso que torna seguro
+entregar o botão de editar: o pior que uma nota errada faz é o agente responder
+pior — nenhuma nota altera um contrato. E nada é rasurado: corrigir escreve
+embaixo, com data e autor, como averbação de matrícula.
+
 **O sistema nunca fecha um atendimento sozinho.** Passado o tempo de silêncio,
 o caso sobe ao topo da fila pedindo um desfecho de alguém. Fechar por
 inatividade é escrever "não quis" onde a verdade é "não sei".
@@ -111,6 +118,7 @@ npm run aferir       # o conjunto de referência contra o modelo real
 | `/escrituras` | A esteira até a matrícula, separada por de quem é a bola |
 | `/alterar` | Pedido de alteração de cadastro em texto livre |
 | `/consulta` | Perguntas da equipe sobre os relatórios |
+| `/cerebro` | O que a equipe entendeu com a operação — editável, e sem poder mexer em cadastro |
 | `/imovel/[id]` | "Por que esse anúncio caiu?" — o histórico completo |
 
 ## Stack
@@ -139,9 +147,11 @@ Isto é um projeto de portfólio e não está pronto para produção. O que falt
 está documentado, não escondido:
 
 - **O painel não tem autenticação.** Qualquer um com o endereço aprova anúncio.
-- **O sistema não aprende.** Ele registra tudo — inclusive, agora, qual modelo
-  e qual versão de prompt produziram cada leitura (`leitura_modelo`) — mas nada
-  se ajusta sozinho. O caminho até lá está em `docs/PLANO_CEREBRO.md`.
+- **O sistema não aprende sozinho, e isso é escolha.** Ele registra qual modelo
+  e qual versão de prompt produziram cada leitura (`leitura_modelo`), afere a
+  leitura contra um conjunto de referência (`npm run aferir`) e guarda o que a
+  equipe entendeu num cérebro editável (`/cerebro`) — mas nenhuma nota vira
+  ajuste sem uma pessoa confirmar. O plano está em `docs/PLANO_CEREBRO.md`.
 - Os números de calibração (`docs/calibracao.json`) são chutes iniciais que
   precisam de operação real para afinar.
 - O webhook exige um segredo compartilhado; o agente de consulta usa um papel

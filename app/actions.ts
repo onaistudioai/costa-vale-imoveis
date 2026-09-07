@@ -10,6 +10,7 @@ import { consultar } from "@/consulta";
 import { extratorGroq } from "@/agentes/modelo";
 import { comProcedencia } from "@/agentes/procedencia";
 import { registrarLeitura } from "@/lib/leitura-db";
+import { escrever, versionar } from "@/cerebro/db";
 
 /**
  * Decidir um item da fila.
@@ -232,4 +233,52 @@ export async function perguntar(pergunta: string) {
     registrarLeitura,
   );
   return consultar(pergunta.slice(0, 500), extrair);
+}
+
+/**
+ * Escrever no cérebro. Nasce proposta: não influencia agente nenhum até que
+ * alguém da equipe confirme.
+ */
+export async function anotar(formData: FormData) {
+  const texto = String(formData.get("texto") ?? "").trim();
+  const autor = String(formData.get("autor") ?? "").trim();
+  if (!texto || !autor) return;
+
+  await escrever({
+    escopo: String(formData.get("escopo") ?? "geral"),
+    chave: String(formData.get("chave") ?? "").trim(),
+    texto: texto.slice(0, 400),
+    autor,
+    evidencia: { fonte: "escrita à mão no painel" },
+  });
+  revalidatePath("/cerebro");
+}
+
+/**
+ * As quatro ações humanas sobre uma nota — confirmar, corrigir, fixar e
+ * desativar — são todas a mesma escrita: uma versão nova. Nada é apagado.
+ */
+export async function versionarNota(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const estado = String(formData.get("estado") ?? "") as
+    | "rascunho"
+    | "confirmada"
+    | "fixada"
+    | "desativada";
+  const texto = String(formData.get("texto") ?? "").trim();
+  const motivo = String(formData.get("motivo") ?? "").trim();
+
+  try {
+    await versionar(id, {
+      estado,
+      texto: texto || undefined,
+      motivo: motivo || undefined,
+      // Sem senha no painel ainda, o autor da ação é a equipe (ver README).
+      autor: "equipe",
+    });
+  } catch (e) {
+    const { redirect } = await import("next/navigation");
+    redirect(`/cerebro?erro=${encodeURIComponent(String(e))}`);
+  }
+  revalidatePath("/cerebro");
 }

@@ -57,6 +57,13 @@
       "when": 1788794364341,
       "tag": "0007_procedencia_leitura_modelo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788795227237,
+      "tag": "0008_cerebro_notas",
+      "breakpoints": true
     }
   ]
 }

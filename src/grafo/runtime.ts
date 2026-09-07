@@ -5,6 +5,7 @@ import { CONFIG_ROTEAMENTO } from "@/lib/config";
 import { extratorGroq } from "@/agentes/modelo";
 import { ioDb, jaProcessado, marcarProcessado } from "@/agentes/contexto-db";
 import { registrarLeitura } from "@/lib/leitura-db";
+import { notasDoAgente } from "@/cerebro/db";
 import { construirGrafo } from "./index";
 import { mundoDb } from "./mundo-db";
 import { Despachante } from "./despachante";
@@ -29,6 +30,7 @@ function compilar(checkpointer: PostgresSaver) {
     extrator: extratorGroq(),
     config: CONFIG_ROTEAMENTO,
     registrarLeitura,
+    notasDoCerebro: (agente) => notasDoAgente(agente),
   }).compile({ checkpointer });
 }
 
