@@ -1,7 +1,7 @@
 import type { ConfigRoteamento } from "@/tipos";
 
 /**
- * Espelha o bloco `roteamento` de `.planning/config.json`.
+ * Espelha o bloco `roteamento` de `docs/calibracao.json`.
  *
  * `scoreMinimo` é o botão de calibração: é ele que decide quando o Agente 3
  * escala em vez de alocar mal. 40 é chute inicial — precisa de estoque real e

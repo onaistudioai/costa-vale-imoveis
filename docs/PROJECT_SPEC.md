@@ -312,7 +312,7 @@ O ponto fino: o Agente 4 precisa parar de oferecer o imóvel **antes** do anúnc
 
 ## 8. Tech stack
 
-- **App e API:** Next.js. A versão deste ambiente diverge do conhecido — os guias em `node_modules/next/dist/docs/` são a fonte, conforme `D:\projetos\AGENTS.md`.
+- **App e API:** Next.js. A versão deste ambiente diverge do conhecido — os guias em `node_modules/next/dist/docs/` são a fonte, e não a memória de nenhum modelo.
 - **Banco:** Postgres (Neon).
 - **Orquestração:** LangGraph.js, no mesmo repo. Um deploy, tipos compartilhados entre app e agentes, sem contrato HTTP no meio.
 - **Agente único:** LangChain, dentro de cada nó que precisa de modelo.

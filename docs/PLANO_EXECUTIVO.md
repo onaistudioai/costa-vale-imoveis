@@ -34,7 +34,7 @@ Saída: `src/regras/`, `src/regras/*.test.ts`.
 
 **Parte 1.3: Scaffolding e contratos** — Timeout: 60min
 
-> **Armadilha de diretório.** `D:\projetos` tem um `package.json` próprio, de um app Next.js sem relação com este (check-in/dashboard, Drizzle, next-auth). Todo comando `npm` e `npx` precisa rodar **dentro de** `D:\projetos\imobiliaria`, que agora tem `package.json` próprio. Sem isso o npm sobe na árvore e instala no app do vizinho — em silêncio, sem erro. Já aconteceu uma vez.
+> **Armadilha de diretório.** Se a pasta-mãe deste projeto contiver um `package.json` de outro app, todo `npm`/`npx` precisa rodar **dentro** desta pasta. Sem isso o npm sobe na árvore e instala no projeto do vizinho — em silêncio, sem erro. Aconteceu uma vez aqui, e é o motivo de `next.config.ts` fixar `turbopack.root`.
 
 Projeto Next.js (ler `node_modules/next/dist/docs/` antes de escrever qualquer rota — a versão diverge do conhecido; o app vizinho está em Next 16.2.6, boa referência do que esperar). Tipos compartilhados das entidades. Interface `AgenteContexto` que implementa a **R5** da seção 11: cada agente recebe writer só dos campos que são dele, então escrever fora do próprio domínio não compila. É o contrato que permite as waves seguintes rodarem em paralelo sem se esbarrar.
 Saída: projeto rodando, `src/tipos/`, `src/agentes/contrato.ts`.
@@ -172,7 +172,7 @@ de código:
 | Bridge WhatsApp | subir o binário Go do `whatsapp-mcp` como serviço, parear o número uma vez e apontar `WHATSAPP_BRIDGE_URL=http://localhost:8080` |
 | Varredura | cron de minuto: `curl -s -H "x-webhook-secret: $WEBHOOK_SECRET" localhost:3000/api/varredura` |
 | Entrada de eventos | `POST /api/eventos` com `x-webhook-secret`, exposto só pro CRM e pro canal |
-| Segredos | `.env` fora do repo; a chave Groq vive no cofre em `D:\projetos\.credentials` |
+| Segredos | `.env` fora do repo, e a chave do modelo fora do `.env` também — em cofre de credenciais separado |
 
 ⚠️ **O bridge usa conta pessoal via WhatsApp Web, não a API oficial.** Serve
 pra piloto e portfólio; volume comercial pede Cloud API da Meta (número
