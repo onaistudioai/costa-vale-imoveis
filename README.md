@@ -9,9 +9,9 @@ decide se o imóvel pode ser anunciado é uma função em TypeScript, testável 
 chave de API e sem banco. O que o modelo erra vira dado errado, nunca ação
 errada.
 
-> Projeto de portfólio. A imobiliária, os corretores, os imóveis e os clientes
-> são fictícios. A implantação em servidor está descrita no plano, mas não foi
-> executada.
+> Sistema funcional e pronto para rodar, com dados de demonstração de uma
+> imobiliária de Sorocaba. Não está em produção: a implantação em servidor está
+> descrita no plano e ainda não foi executada.
 
 ## Por que existe
 
@@ -85,7 +85,7 @@ obedece prazo interno ensina a equipe a ignorar o alerta inteiro.
 npm install
 cp .env.example .env      # preencha DATABASE_URL e GROQ_API_KEY
 npm run db:migrate        # aplica as 6 migrations
-npm run seed              # estoque fictício de Sorocaba
+npm run seed              # estoque de demonstração de Sorocaba
 npm run dev               # http://localhost:3000
 ```
 
@@ -134,16 +134,23 @@ src/regras/   regras puras — sem banco, sem modelo, 100% testáveis
 src/agentes/  os seis agentes
 src/grafo/    o grafo, o despachante e o contrato de coordenação
 src/lib/      banco, varredura, recepção, consultas do painel
-docs/         especificação, plano executivo e números de calibração
+docs/         especificação, plano executivo, implantação e calibração
 drizzle/      migrations
 ```
 
 A separação que sustenta o resto: **`src/regras/` não importa banco nem modelo.**
 É o que permite testar a decisão de negócio isolada da infraestrutura.
 
+## Levar para o sistema de uma empresa
+
+`docs/IMPLANTACAO.md` descreve o processo completo: levantamento dos números
+que precisam mudar, encaixe no que a empresa já usa, carga de dados, duas
+semanas em sombra (o sistema decide e não executa), virada de um agente por
+vez — o que fala com cliente é sempre o último — e a supervisão em regime.
+
 ## Segurança e limites conhecidos
 
-Isto é um projeto de portfólio e não está pronto para produção. O que falta
+O sistema roda inteiro, mas ainda não foi endurecido para produção. O que falta
 está documentado, não escondido:
 
 - **O painel não tem autenticação.** Qualquer um com o endereço aprova anúncio.

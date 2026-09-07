@@ -175,7 +175,7 @@ de código:
 | Segredos | `.env` fora do repo, e a chave do modelo fora do `.env` também — em cofre de credenciais separado |
 
 ⚠️ **O bridge usa conta pessoal via WhatsApp Web, não a API oficial.** Serve
-pra piloto e portfólio; volume comercial pede Cloud API da Meta (número
+pra piloto; volume comercial pede Cloud API da Meta (número
 comercial, templates aprovados, custo por conversa). A troca é de um arquivo —
 `src/lib/canal.ts` — justamente porque o canal ficou atrás de uma função só.
 
@@ -322,7 +322,7 @@ Decisões que valem registro:
   seguinte.
 
 Fora de escopo, de propósito: emissão de boleto e PIX reais. Isso é integração
-bancária, e num projeto de portfólio uma integração financeira falsa é pior que
+bancária, e antes de um cliente real uma integração financeira falsa é pior que
 nenhuma.
 
 Arquivos: `src/regras/locacao.ts`, tabelas `contrato_locacao` e

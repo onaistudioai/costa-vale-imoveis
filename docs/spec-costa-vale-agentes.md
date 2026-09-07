@@ -216,7 +216,7 @@ Adicionei `etapa`, porque o Agente 2 precisa registrar o caminho até o fechamen
 id, agente_origem, entidade, id_entidade, campo,
 valor_anterior, valor_novo, timestamp, aprovado_por
 ```
-Registro de tudo que qualquer agente mudou. Quando alguém perguntar "por que esse anúncio caiu?", a resposta está aqui. Em portfólio, isso é o que separa um protótipo de um sistema.
+Registro de tudo que qualquer agente mudou. Quando alguém perguntar "por que esse anúncio caiu?", a resposta está aqui. É o que separa um protótipo de um sistema.
 
 ---
 
