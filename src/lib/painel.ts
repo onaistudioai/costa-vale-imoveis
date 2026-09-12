@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 
 /**
@@ -28,10 +28,29 @@ export const AGENTE: Record<string, string> = {
   regra: "Regra",
 };
 
+/** Como cada faixa se apresenta na fila. O texto explica, a cor só reforça. */
+export const FAIXA: Record<string, { rotulo: string; explicacao: string }> = {
+  vermelha: {
+    rotulo: "Urgente",
+    explicacao: "Dinheiro, sem volta, ou o sistema não entendeu o que leu.",
+  },
+  amarela: {
+    rotulo: "Revisado",
+    explicacao: "Caso ambíguo: já veio com uma proposta para você conferir.",
+  },
+  verde: {
+    rotulo: "Rotina",
+    explicacao: "Confirmação simples, sem custo e reversível.",
+  },
+};
+
 /**
  * A fila. Duas origens no mesmo lugar: os três gates N2 e as escalações N3.
- * Mais antigo primeiro — o custo de não decidir cresce com o tempo, e um
- * pedido de derrubar mídia esquecido é dinheiro queimando.
+ *
+ * Ordena por faixa antes de data. A ordem cronológica pura tratava "confirma
+ * que derrubo R$ 4.200 de mídia" igual a "cliente perguntou algo fora do
+ * padrão", e com volume isso vira fila que ninguém lê. Dentro da mesma faixa,
+ * mais antigo primeiro — o custo de não decidir cresce com o tempo.
  */
 export async function filaPendente() {
   return db
@@ -47,8 +66,18 @@ export async function filaPendente() {
         ne(schema.aprovacao.tipo, "aceite_corretor"),
       ),
     )
-    .orderBy(schema.aprovacao.criadoEm);
+    .orderBy(ordemDaFaixa, schema.aprovacao.criadoEm);
 }
+
+/**
+ * A ordem das faixas, escrita no SQL e não no enum.
+ *
+ * Depender da ordem de declaração do enum do Postgres economizaria esta linha,
+ * mas amarraria a fila do painel a uma decisão de migração: inserir uma faixa
+ * nova no meio viraria reordenação silenciosa da tela.
+ */
+const ordemDaFaixa = sql`case ${schema.aprovacao.faixa}
+  when 'vermelha' then 0 when 'amarela' then 1 else 2 end`;
 
 /**
  * As ofertas em aberto. Não é fila de trabalho — é visibilidade: mostra pra
@@ -110,6 +139,24 @@ export async function historicoDoImovel(idImovel: string) {
 }
 
 /** Descreve uma mudança do log em português, pra pessoa não ler nome de coluna. */
+/**
+ * O essencial da busca, sem `textoOriginal`: a fala do cliente fica na
+ * conversa, não espalhada pelas telas de auditoria.
+ */
+function resumoDaBusca(json: string | null): string {
+  try {
+    const c = JSON.parse(json ?? "{}") as Record<string, unknown>;
+    const partes = [
+      c.tipoImovel,
+      Array.isArray(c.bairrosDesejados) ? c.bairrosDesejados.join("/") : null,
+      typeof c.valorMax === "number" ? `até R$ ${c.valorMax.toLocaleString("pt-BR")}` : null,
+    ].filter(Boolean);
+    return partes.length ? ` (${partes.join(", ")})` : "";
+  } catch {
+    return "";
+  }
+}
+
 export function descrever(e: {
   campo: string;
   valorAnterior: string | null;
@@ -142,11 +189,43 @@ export function descrever(e: {
       return `Endereço corrigido: "${de}" → "${para}"`;
     case "imovel.bairro":
       return `Bairro corrigido: "${de}" → "${para}"`;
+    case "imovel.tipo":
+      return `Tipo do imóvel corrigido: "${de}" → "${para}"`;
+    case "imovel.pontosReferencia":
+      return `Pontos de referência corrigidos: "${de}" → "${para}"`;
     case "cliente.telefone":
     case "cliente.email":
     case "cliente.nome":
       return `Cadastro do cliente atualizado: "${de}" → "${para}"`;
+    case "busca":
+      return `Critérios de busca registrados${resumoDaBusca(e.valorNovo)}`;
+    case "conversa":
+      // O texto inteiro está na conversa; aqui ele só afogaria a lista.
+      return "Resposta enviada ao cliente";
+    case "papel":
+      return `Papel atribuído: ${para}`;
+    case "atendimento":
+    case "atendimento.estado":
+      return `Atendimento: ${de} → ${para}`;
+    case "atendimento.reabertura":
+      return `Atendimento reaberto pelo cliente (motivo anterior: ${de})`;
+    case "atendimento.desfecho":
+      return `Atendimento encerrado: ${para}`;
+    case "parcela.atrasada":
+      return `Parcela marcada como atrasada — ${para}`;
+    case "parcela.cobranca":
+      return `Cobrança enviada: ${de} → ${para}`;
+    case "cliente.criado":
+      return `Cliente novo cadastrado pelo ${de} (${para})`;
+    case "identidade.reconhecida":
+      return `Cliente reconhecido pelo ${de}: ${para}`;
     default:
+      if (e.campo.startsWith("decisao.")) {
+        return `Decisão registrada: ${ROTULO[e.campo.slice(8)] ?? e.campo.slice(8)} → ${para}`;
+      }
+      if (e.campo.startsWith("expirou.")) {
+        return `Prazo esgotado: ${ROTULO[e.campo.slice(8)] ?? e.campo.slice(8)}`;
+      }
       return `${e.campo}: ${de} → ${para}`;
   }
 }

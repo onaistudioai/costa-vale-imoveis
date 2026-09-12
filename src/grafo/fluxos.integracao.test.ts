@@ -10,6 +10,7 @@ import { mundoDb } from "./mundo-db";
 import { threadDoEvento, type Evento } from "./eventos";
 import { processarEvento } from "./runtime";
 import { varrerPrazos } from "@/lib/varredura";
+import { cifrar } from "@/lib/cripto";
 
 /**
  * Fluxo A e Fluxo B ponta a ponta, com o grafo de produção inteiro: nós reais,
@@ -327,13 +328,13 @@ d("Fluxo C — push com aceite e prazo", () => {
     const imovel = await criarImovel({ estadoOperacional: "pronto", estadoAnuncio: "no_ar" });
     const [cliente] = await db
       .insert(schema.cliente)
-      .values({ nome: "Helena Prado Vasques", telefone: "15992000001" })
+      .values({ nome: "Helena Prado Vasques", telefone: cifrar("15992000001") })
       .returning();
     const corretores = await db
       .insert(schema.corretor)
       .values([
-        { nome: "Ana Beatriz Moraes", telefone: "15991000001" },
-        { nome: "Bruno Tavares Lima", telefone: "15991000002" },
+        { nome: "Ana Beatriz Moraes", telefone: cifrar("15991000001") },
+        { nome: "Bruno Tavares Lima", telefone: cifrar("15991000002") },
       ])
       .returning();
 

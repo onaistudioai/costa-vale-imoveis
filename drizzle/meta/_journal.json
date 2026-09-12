@@ -71,6 +71,34 @@
       "when": 1788818287595,
       "tag": "0009_mensagem_enviada",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788989808216,
+      "tag": "0010_pii_cifrada",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788989808217,
+      "tag": "0011_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789229882355,
+      "tag": "0012_strong_energizer",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789232802856,
+      "tag": "0013_fantastic_kingpin",
+      "breakpoints": true
     }
   ]
 }

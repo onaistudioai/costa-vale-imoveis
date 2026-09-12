@@ -49,11 +49,16 @@ export async function enviarMensagem(
  * assim que "o sistema avisou o corretor" deixa de ser afirmação e vira linha
  * com hora. Falha de gravação nunca derruba o envio.
  */
-async function registrar(
+export async function registrar(
   destino: string | null | undefined,
   texto: string,
   estado: "entregue" | "sem_canal" | "falha",
   motivo: string | null,
+  // Exportada e com estes dois últimos por causa do e-mail (`src/lib/email.ts`),
+  // que grava na mesma tabela. Uma tabela só é o ponto: "o sistema avisou?" é
+  // uma pergunta só, não uma por canal.
+  canal: "whatsapp" | "email" = "whatsapp",
+  assunto: string | null = null,
 ) {
   try {
     await db.insert(schema.mensagemEnviada).values({
@@ -61,6 +66,8 @@ async function registrar(
       texto,
       estado,
       motivo,
+      canal,
+      assunto,
     });
   } catch (e) {
     console.warn("[canal] mensagem não registrada:", e);

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { db, pool, schema } from "@/lib/db";
 import { fundir, reconhecer, vincular } from "./identidade-db";
+import { cifrar, indice } from "@/lib/cripto";
 
 /**
  * O caso do user, contra o banco de verdade.
@@ -36,8 +37,12 @@ beforeAll(async () => {
     .insert(schema.cliente)
     .values([
       { nome: "ju.mendes.sp", origemCanal: "instagram" },
-      { nome: "Ju", telefone: "15993110022", origemCanal: "whatsapp" },
-      { nome: "Roberto Almeida Pinto", email: "roberto@exemplo.com.br" },
+      { nome: "Ju", telefone: cifrar("15993110022"), origemCanal: "whatsapp" },
+      {
+        nome: "Roberto Almeida Pinto",
+        email: cifrar("roberto@exemplo.com.br"),
+        emailIndice: indice("roberto@exemplo.com.br"),
+      },
     ])
     .returning();
 
@@ -46,8 +51,20 @@ beforeAll(async () => {
   estranho = criados[2]!.idCliente;
 
   await db.insert(schema.identidade).values([
-    { idCliente: insta, canal: "instagram", identificador: "ju.mendes.sp", apelido: "Ju Mendes | Sorocaba" },
-    { idCliente: estranho, canal: "site", identificador: "roberto@exemplo.com.br", apelido: "Roberto" },
+    {
+      idCliente: insta,
+      canal: "instagram",
+      identificador: cifrar("ju.mendes.sp")!,
+      identificadorIndice: indice("ju.mendes.sp"),
+      apelido: "Ju Mendes | Sorocaba",
+    },
+    {
+      idCliente: estranho,
+      canal: "site",
+      identificador: cifrar("roberto@exemplo.com.br")!,
+      identificadorIndice: indice("roberto@exemplo.com.br"),
+      apelido: "Roberto",
+    },
   ]);
 
   await db.insert(schema.busca).values({

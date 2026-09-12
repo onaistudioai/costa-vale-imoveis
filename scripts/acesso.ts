@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { hashDaSenha } from "../src/lib/acesso";
+import { gerarSal, hashDaSenha } from "../src/lib/acesso";
 
 /**
  * Gera acesso ao painel.
@@ -25,15 +25,21 @@ const ALFABETO = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const senha = (n = 16) =>
   Array.from(randomBytes(n), (b) => ALFABETO[b % ALFABETO.length]).join("");
 
-const gerados = nomes.map((nome) => ({ nome, senha: senha() }));
+const gerados = nomes.map((nome) => {
+  // Sal por pessoa, gerado junto: é o que impede que duas senhas iguais
+  // apareçam como o mesmo hash na linha do `.env`.
+  const sal = gerarSal();
+  const s = senha();
+  return { nome, senha: s, sal, hash: hashDaSenha(s, sal) };
+});
 
 console.log("\nEntregue cada senha à sua pessoa. Elas não ficam guardadas em lugar nenhum.\n");
 for (const g of gerados) console.log(`  ${g.nome.padEnd(14)} ${g.senha}`);
 
 console.log("\nNo .env (uma linha só):\n");
 console.log(
-  `PAINEL_USUARIOS=${gerados.map((g) => `${g.nome}:${hashDaSenha(g.senha)}`).join(",")}`,
+  `PAINEL_USUARIOS=${gerados.map((g) => `${g.nome}:${g.sal}:${g.hash}`).join(",")}`,
 );
 console.log(
-  "\nPara acrescentar gente depois, some as duplas nome:hash na mesma linha, separadas por vírgula.\n",
+  "\nPara acrescentar gente depois, some as trincas nome:sal:hash na mesma linha, separadas por vírgula.\n",
 );

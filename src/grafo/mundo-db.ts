@@ -7,6 +7,7 @@ import type { Slot } from "@/tipos";
 import { portasAlteradorDb } from "@/lib/alteracao-db";
 import type { Mundo } from "./mundo";
 import type { Evento } from "./eventos";
+import { decifrar } from "@/lib/cripto";
 
 /**
  * O `Mundo` sobre Drizzle. Só leitura de contexto e as portas que precisam do
@@ -262,7 +263,7 @@ export const mundoDb: Mundo = {
       .from(schema.cliente)
       .where(eq(schema.cliente.idCliente, e.idCliente!));
 
-    await enviarMensagem(c?.telefone, texto);
+    await enviarMensagem(decifrar(c?.telefone), texto);
 
     // O log fica independente do envio: é ele que alimenta o `historico` que o
     // Agente 4 lê no próximo turno. Canal fora do ar não apaga a conversa.
@@ -352,7 +353,7 @@ export const mundoDb: Mundo = {
         .where(eq(schema.corretor.idCorretor, n.idCorretor));
 
       await enviarMensagem(
-        c?.telefone,
+        decifrar(c?.telefone),
         `Fechado, o lead é seu: ${n.resumo} A visita já está reservada na sua agenda.`,
       );
     },

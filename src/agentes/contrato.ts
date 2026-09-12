@@ -1,4 +1,6 @@
 import type { Agente, TipoAprovacao } from "@/tipos";
+import type { Faixa } from "@/regras/faixa";
+import type { Consolidado } from "@/mesa";
 
 /**
  * R5 — escrita só no que é seu.
@@ -40,6 +42,17 @@ export interface PedidoAprovacao {
   idEntidade: string;
   /** O que a equipe precisa saber pra decidir — custo em risco, motivo, resumo. */
   contexto: Record<string, unknown>;
+  /**
+   * Quanto o pedido pesa (ver `src/regras/faixa.ts`). Decide a ordem na fila,
+   * se a mesa opina antes, e se alguém é avisado fora do painel — nunca se
+   * existe humano. Ausente vale verde, que é o comportamento de antes.
+   */
+  faixa?: Faixa;
+  /**
+   * O que a mesa levantou, quando a faixa amarela a acionou. É leitura pro
+   * humano — o painel mostra como sugestão, e nada no sistema a aplica sozinho.
+   */
+  proposta?: Consolidado;
   /**
    * Para quem o pedido é endereçado, quando não é a equipe. Hoje só a oferta
    * de lead usa: o corretor da vez. Nos gates N2 fica vazio.

@@ -11,7 +11,7 @@ import { extratorGroq } from "@/agentes/modelo";
 import { comProcedencia } from "@/agentes/procedencia";
 import { registrarLeitura } from "@/lib/leitura-db";
 import { escrever, versionar } from "@/cerebro/db";
-import { quemEsta } from "@/lib/acesso";
+import { exigirUsuario } from "@/lib/acesso";
 import { decidirOferta } from "@/lib/oferta";
 
 /**
@@ -24,12 +24,11 @@ import { decidirOferta } from "@/lib/oferta";
 export async function decidir(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const aprovado = formData.get("decisao") === "aprovar";
-  // Quem decidiu é quem entrou no painel, não o que a pessoa digitou: campo de
-  // auditoria preenchido à mão é teatro de auditoria. O `proxy.ts` garante que
-  // ninguém chega aqui sem login, então o campo do formulário só é alcançável
-  // de fora de uma requisição — teste e script.
-  const por =
-    (await quemEsta()) ?? (String(formData.get("por") ?? "").trim() || "não identificado");
+  // Quem decidiu é quem entrou no painel, e só. O campo `por` do formulário
+  // era alcançável por quem monta o POST à mão: bastava mandar outro nome pra
+  // assinar a decisão com ele. Sem sessão, a ação não acontece — registro com
+  // autor inventado é pior que registro nenhum, porque parece auditoria.
+  const por = await exigirUsuario();
   const motivo = String(formData.get("motivo") ?? "").trim() || null;
 
   if (!id) throw new Error("pedido sem id");
@@ -103,6 +102,9 @@ export async function decidir(formData: FormData) {
 export async function responderOferta(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const aceito = formData.get("resposta") === "aceitar";
+  // Server action é endpoint POST: depender só do `proxy.ts` seria uma camada
+  // só. Aqui a checagem é de presença, não de papel — o painel não tem papéis.
+  await exigirUsuario();
   if (!id) throw new Error("oferta sem id");
 
   const [oferta] = await db
@@ -130,6 +132,7 @@ export async function responderOferta(formData: FormData) {
  */
 export async function solicitarAlteracao(formData: FormData) {
   const texto = String(formData.get("texto") ?? "").trim();
+  await exigirUsuario();
   // O mesmo limite da consulta. Texto sem teto é a porta aberta pra alguém
   // colar quarenta páginas e torrar o contexto do modelo.
   if (!texto) throw new Error("pedido vazio");
@@ -155,7 +158,7 @@ export async function solicitarAlteracao(formData: FormData) {
 export async function darDesfecho(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const motivo = String(formData.get("motivo") ?? "") as MotivoDesfecho;
-  const por = String(formData.get("por") ?? "").trim() || "não identificado";
+  const por = await exigirUsuario();
 
   if (!id) throw new Error("atendimento sem id");
   if (!MOTIVOS_DESFECHO.includes(motivo)) throw new Error(`motivo inválido: ${motivo}`);
@@ -199,7 +202,7 @@ export async function darDesfecho(formData: FormData) {
 export async function confirmarFusao(formData: FormData) {
   const vencedor = String(formData.get("vencedor") ?? "");
   const perdedor = String(formData.get("perdedor") ?? "");
-  const por = String(formData.get("por") ?? "").trim() || "não identificado";
+  const por = await exigirUsuario();
   if (!vencedor || !perdedor) throw new Error("fusão sem os dois cadastros");
 
   await fundir(vencedor, perdedor, por);
@@ -211,6 +214,7 @@ export async function confirmarFusao(formData: FormData) {
  * acionado. A conexão que ela usa nem tem permissão de escrever.
  */
 export async function perguntar(pergunta: string) {
+  await exigirUsuario();
   // O 5 não entra no grafo, então a procedência dele se liga aqui — e ele é o
   // único que chama o modelo duas vezes por pergunta (classificar e redigir),
   // o que faz cada pergunta virar duas linhas de auditoria.
@@ -228,8 +232,8 @@ export async function perguntar(pergunta: string) {
  */
 export async function anotar(formData: FormData) {
   const texto = String(formData.get("texto") ?? "").trim();
-  const autor = (await quemEsta()) ?? String(formData.get("autor") ?? "").trim();
-  if (!texto || !autor) return;
+  const autor = await exigirUsuario();
+  if (!texto) return;
 
   await escrever({
     escopo: String(formData.get("escopo") ?? "geral"),
@@ -260,7 +264,7 @@ export async function versionarNota(formData: FormData) {
       estado,
       texto: texto || undefined,
       motivo: motivo || undefined,
-      autor: (await quemEsta()) ?? "não identificado",
+      autor: await exigirUsuario(),
     });
   } catch (e) {
     const { redirect } = await import("next/navigation");

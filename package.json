@@ -20,7 +20,8 @@
     "procedencia": "dotenv -e .env -- tsx scripts/procedencia.ts",
     "aferir": "dotenv -e .env -- tsx scripts/aferir.ts",
     "acesso": "tsx scripts/acesso.ts",
-    "simular": "tsx scripts/simular.ts"
+    "simular": "tsx scripts/simular.ts",
+    "cifrar-pii": "dotenv -e .env -- tsx scripts/cifrar-pii.ts"
   },
   "keywords": [],
   "author": "",
@@ -34,16 +35,18 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "langchain": "^1.5.10",
-    "next": "^16.2.6",
+    "next": "^16.3.4",
     "pg": "^8.23.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
+    "@vercel/config": "^0.7.0",
     "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.13",

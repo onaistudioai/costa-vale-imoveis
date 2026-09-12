@@ -84,6 +84,14 @@ export const estadoAprovacao = pgEnum("estado_aprovacao", [
   "expirado",
 ]);
 
+// Quanto o pedido pesa. Não diz se tem humano — todo pedido tem — diz quem
+// olha antes e quem é incomodado fora do painel. Ver src/regras/faixa.ts.
+export const faixaAprovacao = pgEnum("faixa_aprovacao", [
+  "verde",
+  "amarela",
+  "vermelha",
+]);
+
 export const agenteOrigem = pgEnum("agente_origem", [
   "1_curador",
   "2_guardiao",
@@ -186,15 +194,26 @@ export const laudo = pgTable(
 
 // --- cliente ---
 
-export const cliente = pgTable("cliente", {
-  idCliente: uuid("id_cliente").primaryKey().defaultRandom(),
-  nome: varchar("nome", { length: 255 }).notNull(),
-  cpfCnpj: varchar("cpf_cnpj", { length: 20 }),
-  telefone: varchar("telefone", { length: 30 }),
-  email: varchar("email", { length: 255 }),
-  origemCanal: varchar("origem_canal", { length: 50 }),
-  dataEntrada: timestamp("data_entrada").defaultNow().notNull(),
-});
+// CPF, telefone e e-mail vão cifrados (AES-GCM, `src/lib/cripto.ts`) — daí
+// serem `text` e não `varchar` curto: o ciphertext é maior que o valor. Nunca
+// leia essas colunas direto; passe por `decifrar()`.
+export const cliente = pgTable(
+  "cliente",
+  {
+    idCliente: uuid("id_cliente").primaryKey().defaultRandom(),
+    nome: varchar("nome", { length: 255 }).notNull(),
+    cpfCnpj: text("cpf_cnpj"),
+    telefone: text("telefone"),
+    email: text("email"),
+    // O índice cego do e-mail: HMAC do valor em minúsculas. Existe porque a
+    // aproximação de identidade procura por e-mail exato, e igualdade não
+    // funciona sobre cifra com IV novo a cada gravação.
+    emailIndice: varchar("email_indice", { length: 64 }),
+    origemCanal: varchar("origem_canal", { length: 50 }),
+    dataEntrada: timestamp("data_entrada").defaultNow().notNull(),
+  },
+  (t) => [index("cliente_email_indice_idx").on(t.emailIndice)],
+);
 
 // --- papel ---
 // Sem campo `tipo` no cliente: a mesma pessoa pode ser proprietária de um
@@ -242,7 +261,8 @@ export const busca = pgTable(
 export const corretor = pgTable("corretor", {
   idCorretor: uuid("id_corretor").primaryKey().defaultRandom(),
   nome: varchar("nome", { length: 255 }).notNull(),
-  telefone: varchar("telefone", { length: 30 }),
+  // Cifrado, como o do cliente. Decifre antes de mandar mensagem.
+  telefone: text("telefone"),
   comissaoPercentual: numeric("comissao_percentual", {
     precision: 5,
     scale: 2,
@@ -366,12 +386,22 @@ export const aprovacao = pgTable(
     // A thread do LangGraph que está parada esperando esta decisão. É o único
     // ponteiro que o painel precisa pra retomar o grafo (seção 11).
     threadId: varchar("thread_id", { length: 120 }),
+    // Verde por padrão: linha antiga não vira urgência retroativa só porque a
+    // coluna nasceu depois dela.
+    faixa: faixaAprovacao("faixa").notNull().default("verde"),
+    // O que a mesa levantou, quando a faixa amarela a acionou. Nulo é o normal:
+    // verde e vermelha não passam por lá. É leitura pro humano, nunca valor que
+    // o sistema aplique sozinho.
+    proposta: jsonb("proposta"),
     decididoPor: varchar("decidido_por", { length: 255 }),
     decididoEm: timestamp("decidido_em"),
     motivo: text("motivo"),
   },
   (t) => [
     index("aprovacao_pendente_idx").on(t.estado, t.criadoEm),
+    // A fila do painel ordena por faixa antes de data: o que dói primeiro
+    // aparece primeiro, e sem isto o ORDER BY vira varredura.
+    index("aprovacao_faixa_idx").on(t.estado, t.faixa, t.criadoEm),
     // A varredura de prazo lê exatamente por aqui.
     index("aprovacao_expira_idx").on(t.estado, t.expiraEm),
     // Idempotência do gate: um nó que interrompe re-executa inteiro no resume
@@ -458,8 +488,12 @@ export const identidade = pgTable(
       .references(() => cliente.idCliente, { onDelete: "cascade" }),
     canal: canalIdentidade("canal").notNull(),
     // O que o canal entrega como identificador: @handle, wa_id, id do perfil.
-    // Guardado normalizado (minúsculo, sem @) — comparar cru erra por caixa.
-    identificador: varchar("identificador", { length: 255 }).notNull(),
+    // Normalizado (minúsculo, sem @) **antes** de cifrar — comparar cru erra
+    // por caixa, e depois de cifrado não dá mais pra normalizar.
+    identificador: text("identificador").notNull(),
+    // O índice cego do mesmo valor: é ele que carrega a unicidade por canal,
+    // porque a cifra muda a cada gravação e não serve de chave.
+    identificadorIndice: varchar("identificador_indice", { length: 64 }).notNull(),
     // Como o perfil se apresenta. Não serve de chave (apelido, nome de loja,
     // emoji), mas é sinal de aproximação.
     apelido: varchar("apelido", { length: 255 }),
@@ -469,8 +503,9 @@ export const identidade = pgTable(
   (t) => [
     // A âncora determinística: um identificador de um canal aponta pra uma
     // pessoa só. É esta chave que faz a segunda mensagem do mesmo @ cair no
-    // mesmo cliente em vez de abrir outro.
-    uniqueIndex("identidade_canal_idx").on(t.canal, t.identificador),
+    // mesmo cliente em vez de abrir outro. Sobre o índice cego, não sobre a
+    // cifra — duas cifras do mesmo valor são diferentes de propósito.
+    uniqueIndex("identidade_canal_idx").on(t.canal, t.identificadorIndice),
     index("identidade_cliente_idx").on(t.idCliente),
   ],
 );
@@ -751,7 +786,15 @@ export const mensagemEnviada = pgTable(
   "mensagem_enviada",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    destino: varchar("destino", { length: 40 }),
+    // Telefone ou endereço de e-mail. 255 porque e-mail não cabe em 40 — e o
+    // que não cabe o Postgres recusa, derrubando o registro da tentativa
+    // justamente quando ela mais importa.
+    destino: varchar("destino", { length: 255 }),
+    // "whatsapp" nas linhas que já existiam: quando esta coluna nasceu, o
+    // WhatsApp era o único canal, então o padrão é a verdade histórica.
+    canal: varchar("canal", { length: 20 }).notNull().default("whatsapp"),
+    // Só o e-mail tem. É por ele que se acha o caso meses depois.
+    assunto: text("assunto"),
     texto: text("texto").notNull(),
     // "entregue" quando o canal aceitou, "sem_canal" quando não há para onde
     // mandar, "falha" quando o canal recusou. Os três são estados diferentes e

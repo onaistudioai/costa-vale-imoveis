@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { AgenteContexto } from "./contrato";
 import type { Extrator } from "./modelo";
+import { classificar } from "@/regras/faixa";
 import {
   avaliarAlteracao,
   descreverAlteracao,
@@ -151,6 +152,21 @@ export async function alterar(
   // Confiança baixa do modelo não recusa nem aplica: entra na confirmação
   // como aviso. Quem lê o "de → para" resolve em dois segundos o que o modelo
   // não conseguiu resolver com o texto que recebeu.
+  //
+  // `avaliarAlteracao` já classificou o risco (preço de anúncio no ar, salto de
+  // unidade, imóvel em negociação). A faixa herda esse trabalho em vez de
+  // refazê-lo com outro critério.
+  //
+  // Este agente não passa pela mesa, e não por esquecimento: a confiança dele
+  // só tem "alta" e "baixa", e o risco só "baixo" e "alto" — nenhuma combinação
+  // cai em amarela. Faz sentido que seja assim. O que decide aqui é ler o
+  // "de → para", e isso um olho humano resolve mais rápido e melhor do que três
+  // chamadas de modelo deliberando.
+  const faixa = classificar({
+    confianca: pedido.confianca,
+    risco: veredito.risco,
+  });
+
   const decisao = await ctx.pedirAprovacao({
     tipo: "aplicar_alteracao",
     entidade: pedido.entidade,
@@ -163,6 +179,7 @@ export async function alterar(
       pedidoOriginal: texto,
       leituraIncerta: pedido.confianca === "baixa",
     },
+    faixa,
   });
 
   if (!decisao.aprovado) {

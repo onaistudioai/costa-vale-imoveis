@@ -5,6 +5,7 @@
   --texto: #1c1a17;
   --fraco: #6d675e;
   --urgente: #a8321e;
+  --atencao: #9a6b12;
   --ok: #2f6b45;
 }
 
@@ -16,6 +17,7 @@
     --texto: #f2efe8;
     --fraco: #a49d92;
     --urgente: #e5866f;
+    --atencao: #d9ae5c;
     --ok: #7fc79b;
   }
 }
@@ -302,4 +304,32 @@ select {
 .card.acompanhar {
   border-left: 3px solid var(--borda);
   opacity: 0.85;
+}
+
+/* --- faixas da fila de decisões --- */
+/* A barra lateral dá a ordem num relance; o texto do rótulo carrega o
+   significado, porque cor sozinha não é informação para quem não a distingue. */
+.card.faixa-vermelha {
+  border-left: 3px solid var(--urgente);
+}
+
+.card.faixa-amarela {
+  border-left: 3px solid var(--atencao);
+}
+
+.faixa-tag {
+  font-size: 0.8rem;
+  margin: 0 0 0.6rem;
+  color: var(--fraco);
+}
+
+.faixa-tag.faixa-vermelha {
+  color: var(--urgente);
+}
+
+.proposta {
+  border-left: 2px solid var(--borda);
+  padding-left: 0.8rem;
+  margin: 0.7rem 0;
+  font-size: 0.92rem;
 }

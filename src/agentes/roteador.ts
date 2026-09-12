@@ -1,5 +1,6 @@
 import { pontuarCorretores, type EntradaRoteamento } from "@/regras/roteamento";
 import type { AgenteContexto } from "./contrato";
+import { classificar } from "@/regras/faixa";
 import type { ConfigRoteamento, Slot } from "@/tipos";
 
 /**
@@ -95,6 +96,7 @@ export async function rotear(
           resumo: entrada.resumoDaConversa,
           recusaram,
         },
+        faixa: classificar({}),
       });
       return { decisao: "escalado", motivo: r.motivo, recusaram };
     }
@@ -144,6 +146,9 @@ export async function rotear(
           idCorretor: r.idCorretor,
           idImovel: entrada.idImovel,
         },
+        // Remarcar visita é reversível e não custa mídia. O Agente 3 é
+        // determinístico, então não há leitura de modelo em que duvidar.
+        faixa: classificar({}),
       });
       return { decisao: "escalado", motivo: "conflito_de_agenda", recusaram };
     }
@@ -194,6 +199,9 @@ export async function rotear(
       resumo: entrada.resumoDaConversa,
       recusaram,
     },
+    // Lead sem dono esfria sozinho: a consequência não é grave, mas o relógio
+    // corre. Urgente aqui não é gravidade, é prazo de validade.
+    faixa: classificar({ urgente: true }),
   });
   return { decisao: "escalado", motivo: "ninguem_aceitou", recusaram };
 }

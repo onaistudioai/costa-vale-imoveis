@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { derrubarAnuncio } from "@/regras/publicacao";
 import type { AgenteContexto } from "./contrato";
+import { classificar } from "@/regras/faixa";
+import { revisarSePreciso } from "@/mesa";
 import type { Extrator } from "./modelo";
 import type { Anuncio, EstadoComercial } from "@/tipos";
 
@@ -108,16 +110,36 @@ export async function guardar(
   // Gate N2: mídia paga só para com confirmação humana. Ele sinaliza, a regra
   // derruba — ele não derruba sozinho.
   if (efeito.exigemAprovacao.length > 0) {
+    const contexto = {
+      etapa: extracao.etapa,
+      custoEmRisco: efeito.custoEmRisco,
+      canais: efeito.exigemAprovacao.map((a) => a.canal),
+      resumo: extracao.resumo,
+    };
+    // Derrubar mídia paga não desfaz: o dinheiro do dia já saiu. Por isso entra
+    // como irreversível, e acima do teto de custo nem a mesa opina.
+    const faixa = classificar({
+      confianca: extracao.confianca,
+      custoEmRisco: efeito.custoEmRisco,
+      reversivel: false,
+    });
+
     await ctx.pedirAprovacao({
       tipo: "derrubar_midia",
       entidade: "imovel",
       idEntidade: entrada.idImovel,
-      contexto: {
-        etapa: extracao.etapa,
-        custoEmRisco: efeito.custoEmRisco,
-        canais: efeito.exigemAprovacao.map((a) => a.canal),
-        resumo: extracao.resumo,
-      },
+      contexto,
+      faixa,
+      proposta: await revisarSePreciso(faixa, extrair, {
+        assunto: `Derrubar mídia paga do imóvel ${entrada.idImovel}`,
+        fatos: [
+          `Negociação foi para: ${extracao.etapa}.`,
+          `Estado comercial muda de ${entrada.estadoComercialAtual} para ${novo}.`,
+          `Mídia paga rodando em: ${contexto.canais.join(", ")}.`,
+          `Já gastos: R$ ${efeito.custoEmRisco.toFixed(2)}.`,
+          `Leitura do documento: ${extracao.resumo}`,
+        ].join("\n"),
+      }),
     });
   }
 
@@ -129,6 +151,9 @@ export async function guardar(
       entidade: "transacao",
       idEntidade: entrada.idTransacao,
       contexto: { motivo: "etapa_ambigua", etapa: extracao.etapa, resumo: extracao.resumo },
+      // Confiança baixa é vermelha por definição: mandar a mesa raciocinar em
+      // cima de uma leitura ruim só produz confiança falsa.
+      faixa: classificar({ confianca: extracao.confianca }),
     });
   }
 
