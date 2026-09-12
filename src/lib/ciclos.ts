@@ -1,5 +1,6 @@
 import { and, eq, isNull, lte, ne, or } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
+import type { CampoDeLog } from "@/regras/modo";
 import { enviarMensagem } from "@/lib/canal";
 import { avaliar, type Atendimento } from "@/regras/funil";
 import {
@@ -12,6 +13,10 @@ import {
   type Contrato,
 } from "@/regras/locacao";
 import { avaliarProcesso } from "@/regras/escritura";
+import { decifrar } from "@/lib/cripto";
+import { createHash } from "node:crypto";
+import { alertar } from "@/agentes/contexto-db";
+import type { PedidoAprovacao } from "@/agentes/contrato";
 
 /**
  * Os ciclos que não têm gatilho externo.
@@ -75,6 +80,20 @@ export async function reavaliarAtendimentos(agora = new Date()) {
         precisaDesfecho: situacao.precisaDesfecho,
       })
       .where(eq(schema.atendimento.idAtendimento, a.idAtendimento));
+
+    // Só mudança de ESTADO vira linha. A prioridade é recalculada a cada
+    // minuto sobre todo atendimento aberto — logá-la afogaria a tabela e a tela
+    // em ruído, e tela ruidosa não é lida. É o mesmo erro que a faixa evitou no
+    // canal de aviso.
+    if (situacao.estado !== a.estado) {
+      await registrarAutomatico(
+        "atendimento",
+        a.idAtendimento,
+        "atendimento.estado",
+        a.estado,
+        situacao.estado,
+      );
+    }
 
     mudados++;
     if (situacao.precisaDesfecho && !a.precisaDesfecho) pedindoDesfecho++;
@@ -179,6 +198,19 @@ export async function varrerLocacao(agora = new Date()) {
             estagioCobranca: passo?.estagio ?? p.estagioCobranca,
           })
           .where(eq(schema.parcelaAluguel.idParcela, p.idParcela));
+
+        // Marcar alguém como inadimplente é consequência real, e até aqui
+        // acontecia sem deixar rastro nenhum. Só na virada: repetir a cada
+        // minuto enquanto o atraso durasse encheria o log de nada.
+        if (encargos.dias > 0 && p.estado !== "atrasada") {
+          await registrarAutomatico(
+            "parcela",
+            p.idParcela,
+            "parcela.atrasada",
+            p.estado,
+            `${encargos.dias} dia(s), encargos ${moeda(encargos.multa + encargos.juros)}`,
+          );
+        }
       }
 
       if (!passo) continue;
@@ -189,6 +221,22 @@ export async function varrerLocacao(agora = new Date()) {
         // contrato. Vai pro painel, não pro WhatsApp do inquilino.
         avisos.push(
           `Inadimplência de 30 dias no contrato ${c.idContrato} (competência ${p.competencia}) — ${passo.texto}.`,
+        );
+        await abrirPedidoDoCiclo(
+          {
+            tipo: "escalacao_n3",
+            entidade: "parcela",
+            idEntidade: p.idParcela,
+            contexto: {
+              motivo: "inadimplencia_30_dias",
+              etapa: p.competencia,
+              custoEmRisco: encargos.total,
+            },
+            // Dinheiro parado e o relógio correndo: o prazo de um despejo não
+            // espera alguém lembrar de abrir o painel.
+            faixa: "vermelha",
+          },
+          `inadimplencia:${c.idContrato}:${p.competencia}`,
         );
         continue;
       }
@@ -205,8 +253,21 @@ export async function varrerLocacao(agora = new Date()) {
         encargos.dias > 0 ? `está ${encargos.dias} dia(s) em atraso` : passo.texto;
 
       await enviarMensagem(
-        inquilino?.telefone,
+        decifrar(inquilino?.telefone),
         `Olá${inquilino?.nome ? `, ${inquilino.nome.split(" ")[0]}` : ""}! Seu aluguel de ${p.competencia} ${situacao}. Valor: ${moeda(encargos.total)}.`,
+      );
+
+      // Cobrar dinheiro de alguém é a coisa de maior consequência que este
+      // sistema faz sozinho, e era a menos auditada: o texto ficava em
+      // `mensagem_enviada`, mas sem o porquê, sem a parcela e sem o estágio.
+      // Uma multa mal configurada cobraria errado de todo mundo, todo mês, e
+      // só se descobriria pela reclamação do inquilino.
+      await registrarAutomatico(
+        "parcela",
+        p.idParcela,
+        "parcela.cobranca",
+        `estágio ${p.estagioCobranca}`,
+        `estágio ${passo.estagio} (${passo.tom}) — ${moeda(encargos.total)}`,
       );
     }
 
@@ -218,10 +279,39 @@ export async function varrerLocacao(agora = new Date()) {
       avisos.push(
         `Reajuste devido no contrato ${c.idContrato} desde ${reajuste.em.toLocaleDateString("pt-BR")} (aluguel atual ${moeda(c.valorAluguel)}, índice ${linha.indice.toUpperCase()}).`,
       );
+      await abrirPedidoDoCiclo(
+        {
+          tipo: "reajuste_aluguel",
+          entidade: "contrato",
+          idEntidade: c.idContrato,
+          contexto: {
+            motivo: "reajuste_devido",
+            // O índice não vai no valor de propósito: quanto foi o IGPM do ano
+            // não está no banco, e chutar seria a pior mentira possível aqui.
+            observacao: `Índice ${linha.indice.toUpperCase()}, aluguel atual ${moeda(c.valorAluguel)}, devido desde ${reajuste.em.toLocaleDateString("pt-BR")}.`,
+          },
+          faixa: "vermelha",
+        },
+        `reajuste:${c.idContrato}:${reajuste.em.toISOString().slice(0, 7)}`,
+      );
     }
 
     const vigencia = avisosDeVigencia(c, agora);
-    if (vigencia) avisos.push(`Contrato ${c.idContrato}: ${vigencia.texto}.`);
+    if (vigencia) {
+      avisos.push(`Contrato ${c.idContrato}: ${vigencia.texto}.`);
+      await abrirPedidoDoCiclo(
+        {
+          tipo: "escalacao_n3",
+          entidade: "contrato",
+          idEntidade: c.idContrato,
+          contexto: { motivo: "fim_de_vigencia", observacao: vigencia.texto },
+          // Amarela: tem prazo, mas tem folga. Não vale tocar o telefone de
+          // ninguém — chega por e-mail e espera no painel.
+          faixa: "amarela",
+        },
+        `vigencia:${c.idContrato}:${vigencia.texto}`,
+      );
+    }
   }
 
   return { contratos: contratos.length, geradas, cobrancas, avisos };
@@ -303,3 +393,87 @@ const moeda = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export { competenciaDe };
+
+/**
+ * O rastro do que o cron faz sozinho.
+ *
+ * `agenteOrigem: "regra"` e `aprovadoPor` vazio é o que marca a linha como
+ * "ninguém aprovou isto" — é por esse par que a tela de `/automatico` encontra
+ * o que precisa de olho. O padrão vem de `src/lib/varredura.ts`, que até aqui
+ * era o único ponto do cron a registrar qualquer coisa.
+ *
+ * Falha de gravação não derruba o ciclo: perder a linha do log é ruim, parar a
+ * cobrança de todo mundo por causa dela é pior.
+ */
+async function registrarAutomatico(
+  entidade: string,
+  idEntidade: string,
+  campo: CampoDeLog,
+  valorAnterior: string | null,
+  valorNovo: string,
+): Promise<void> {
+  try {
+    await db.insert(schema.logEvento).values({
+      agenteOrigem: "regra",
+      entidade,
+      idEntidade,
+      campo,
+      valorAnterior,
+      valorNovo,
+    });
+  } catch (e) {
+    console.warn("[ciclos] log não registrado:", (e as Error).message);
+  }
+}
+
+/**
+ * Um id de evento derivado do assunto, não sorteado.
+ *
+ * A unique de `aprovacao` é (idEvento, tipo, idEntidade), e no Postgres dois
+ * NULL não colidem — um `idEvento` nulo faria o cron criar uma linha por
+ * minuto, para sempre. Derivar o id do que o pedido É (contrato + competência)
+ * transforma a chave existente na trava de idempotência, sem tabela nem coluna
+ * nova.
+ */
+function idDeterministico(assunto: string): string {
+  const h = createHash("sha1").update(assunto).digest("hex");
+  return [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20, 32)].join(
+    "-",
+  );
+}
+
+/**
+ * O que o ciclo de tempo precisa que uma pessoa decida.
+ *
+ * Até aqui estes casos viravam string num array que morria na resposta HTTP do
+ * cron — inclusive a inadimplência de 30 dias, que o comentário do código dizia
+ * ir "pro painel". Agora vira linha em `aprovacao`, que é a fila que já existe
+ * e já ordena por peso.
+ *
+ * Sem `threadId`: nenhum grafo está parado esperando isto. O painel já trata
+ * esse caso — é o mesmo caminho da fusão de identidade.
+ */
+async function abrirPedidoDoCiclo(
+  p: PedidoAprovacao,
+  assunto: string,
+): Promise<void> {
+  const criados = await db
+    .insert(schema.aprovacao)
+    .values({
+      tipo: p.tipo,
+      entidade: p.entidade,
+      idEntidade: p.idEntidade,
+      solicitadoPorAgente: "regra",
+      contexto: p.contexto,
+      idEvento: idDeterministico(assunto),
+      faixa: p.faixa ?? "verde",
+    })
+    .onConflictDoNothing({
+      target: [schema.aprovacao.idEvento, schema.aprovacao.tipo, schema.aprovacao.idEntidade],
+    })
+    .returning({ id: schema.aprovacao.id });
+
+  // Só na criação: o cron passa de minuto em minuto, e avisar a cada passada
+  // é o jeito mais rápido de fazer a equipe ignorar o canal.
+  if (criados.length > 0) await alertar("regra", p, criados[0]!.id);
+}

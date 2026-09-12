@@ -1,4 +1,5 @@
 import { db, pool, schema } from "../src/lib/db";
+import { cifrar, indice } from "../src/lib/cripto";
 
 /**
  * Estoque fictício de Sorocaba/SP para calibrar o sistema com dado plausível.
@@ -117,7 +118,7 @@ async function main() {
     .values(
       CORRETORES.map((c) => ({
         nome: c.nome,
-        telefone: c.telefone,
+        telefone: cifrar(c.telefone),
         comissaoPercentual: c.comissao,
         regioesAtuacao: c.regioes,
         ativo: c.ativo ?? true,
@@ -125,7 +126,20 @@ async function main() {
     )
     .returning();
 
-  const clientes = await db.insert(schema.cliente).values(CLIENTES).returning();
+  // A PII entra cifrada, como entraria em produção — semear em claro deixaria
+  // o banco de desenvolvimento diferente do real justamente no ponto que este
+  // trabalho existe pra proteger.
+  const clientes = await db
+    .insert(schema.cliente)
+    .values(
+      CLIENTES.map((c) => ({
+        ...c,
+        telefone: cifrar(c.telefone),
+        email: cifrar(c.email),
+        emailIndice: c.email ? indice(c.email) : null,
+      })),
+    )
+    .returning();
 
   const imoveis = await db
     .insert(schema.imovel)
@@ -236,11 +250,11 @@ async function main() {
   // A mesma pessoa nos dois cadastros duplicados. Repare que NÃO existe um
   // campo em comum entre eles: é exatamente o caso que o telefone não resolve.
   await db.insert(schema.identidade).values([
-    { idCliente: clientes[4]!.idCliente, canal: "instagram", identificador: "ju.mendes.sp", apelido: "Ju Mendes | Sorocaba" },
-    { idCliente: clientes[5]!.idCliente, canal: "whatsapp", identificador: "5515993110022", apelido: "Ju" },
-    { idCliente: clientes[0]!.idCliente, canal: "whatsapp", identificador: "5515992000001", apelido: "Helena Prado" },
-    { idCliente: clientes[1]!.idCliente, canal: "site", identificador: "igor.rocha@exemplo.com.br", apelido: "Igor Rocha" },
-    { idCliente: clientes[2]!.idCliente, canal: "portal", identificador: "vivareal:8827311", apelido: "Juliana M. Alves" },
+    { idCliente: clientes[4]!.idCliente, canal: "instagram", identificador: cifrar("ju.mendes.sp")!, identificadorIndice: indice("ju.mendes.sp"), apelido: "Ju Mendes | Sorocaba" },
+    { idCliente: clientes[5]!.idCliente, canal: "whatsapp", identificador: cifrar("5515993110022")!, identificadorIndice: indice("5515993110022"), apelido: "Ju" },
+    { idCliente: clientes[0]!.idCliente, canal: "whatsapp", identificador: cifrar("5515992000001")!, identificadorIndice: indice("5515992000001"), apelido: "Helena Prado" },
+    { idCliente: clientes[1]!.idCliente, canal: "site", identificador: cifrar("igor.rocha@exemplo.com.br")!, identificadorIndice: indice("igor.rocha@exemplo.com.br"), apelido: "Igor Rocha" },
+    { idCliente: clientes[2]!.idCliente, canal: "portal", identificador: cifrar("vivareal:8827311")!, identificadorIndice: indice("vivareal:8827311"), apelido: "Juliana M. Alves" },
   ]);
 
   // As duas buscas parecidas são o segundo indício que liga os cadastros

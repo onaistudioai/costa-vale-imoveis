@@ -8,6 +8,7 @@ import { responderComoCorretor } from "@/lib/resposta-corretor";
 import { extratorGroq } from "@/agentes/modelo";
 import { comProcedencia } from "@/agentes/procedencia";
 import { registrarLeitura } from "@/lib/leitura-db";
+import { segredoConfere } from "@/lib/segredo";
 
 /**
  * A entrada do mundo no sistema.
@@ -55,8 +56,7 @@ const Entrada = z.object({
 const LIMITE_MENSAGEM = 4000;
 
 export async function POST(req: Request) {
-  const segredo = process.env.WEBHOOK_SECRET;
-  if (!segredo || req.headers.get("x-webhook-secret") !== segredo) {
+  if (!segredoConfere(req)) {
     return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
 

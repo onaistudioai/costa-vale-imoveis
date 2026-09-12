@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { varrerPrazos } from "@/lib/varredura";
+import { segredoConfere } from "@/lib/segredo";
 
 /**
  * Endpoint da varredura de prazo. Quem chama é o cron do VPS, no minuto:
@@ -13,13 +14,12 @@ import { varrerPrazos } from "@/lib/varredura";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const segredo = process.env.WEBHOOK_SECRET;
-  if (!segredo || req.headers.get("x-webhook-secret") !== segredo) {
+  if (!segredoConfere(req)) {
     return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
 
   return NextResponse.json(await varrerPrazos());
 }
 
-/** GET faz o mesmo: cron de VPS costuma ser um `curl` simples. */
+/** GET faz o mesmo: é assim que o Vercel Cron chama, e um `curl` também. */
 export const GET = POST;

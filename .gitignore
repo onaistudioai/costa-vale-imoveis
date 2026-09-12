@@ -1,6 +1,10 @@
 node_modules/
-.env
-.env.local
+
+# Todo arquivo de ambiente fica fora do repositorio. O padrao amplo e de
+# proposito: fixar `.env` e `.env.local` deixava passar um `.env.production`
+# criado por engano, que e justamente o que tem segredo de verdade.
+.env*
+!.env.example
 .vitest/
 .next/
 .next/
@@ -12,3 +16,6 @@ tsconfig.tsbuildinfo
 # Material de referência de terceiros (PDF do guia de agentes). Fica na pasta
 # de trabalho, mas não no repositório: é material de outra pessoa e pesa 1 MB.
 guia regra pra criação de agente/
+
+.vercel
+.env*

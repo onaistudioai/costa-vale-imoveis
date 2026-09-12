@@ -5,6 +5,9 @@ import { proximaAbertura } from "@/lib/expediente";
 import type { Agente } from "@/tipos";
 import type { Escrita, PedidoAprovacao } from "./contrato";
 import type { IoDoNo } from "@/grafo/no";
+import { decifrar } from "@/lib/cripto";
+import { montarAlerta, urlDoPedido, type Origem } from "@/lib/alerta";
+import { enviarEmail } from "@/lib/email";
 
 /**
  * A `IoDoNo` de verdade, sobre Drizzle.
@@ -146,6 +149,8 @@ export const ioDb: IoDoNo = {
         contexto: p.mensagem ? { ...p.contexto, mensagem: p.mensagem } : p.contexto,
         idEvento,
         threadId,
+        faixa: p.faixa ?? "verde",
+        proposta: p.proposta ?? null,
         destinatario: p.destinatario ?? null,
         enviarEm: abertura,
         expiraEm: abertura ? new Date(abertura.getTime() + p.prazoMin! * 60_000) : null,
@@ -162,13 +167,53 @@ export const ioDb: IoDoNo = {
     if (criados.length > 0 && p.mensagem && p.destinatario && naHora) {
       await entregar(criados[0]!.id, p.destinatario, p.mensagem);
     }
+
+    // Só na criação: a R7 re-executa o nó inteiro depois do gate, e sem esta
+    // amarra cada retomada mandaria o alerta de novo.
+    if (criados.length > 0) {
+      await alertar(agente, p, criados[0]!.id);
+    }
   },
 
-  async avisar(agente, mensagem) {
-    // ponytail: aviso vai pro log até existir canal de equipe (Slack/WhatsApp).
-    console.log(`[${agente}] ${mensagem}`);
-  },
+  avisar: avisarEquipe,
 };
+
+/**
+ * Dispara os dois canais, cada um no seu papel.
+ *
+ * Quem decide o quê sai é `montarAlerta` (`src/lib/alerta.ts`), que é puro —
+ * aqui só sobra o efeito. Os dois em paralelo porque são independentes: e-mail
+ * lento não deve atrasar o WhatsApp, que é o que chama alguém.
+ *
+ * `allSettled` e não `all`: um canal fora do ar não pode levar o outro junto, e
+ * nenhum dos dois pode derrubar o agente. O pedido já está na fila do painel,
+ * que continua sendo a fonte da verdade — some o aviso, não o trabalho.
+ */
+export async function alertar(
+  agente: Origem,
+  p: PedidoAprovacao,
+  idAprovacao?: string,
+): Promise<void> {
+  const a = montarAlerta(agente, p, urlDoPedido(idAprovacao));
+  if (!a.whatsapp && !a.email) return;
+
+  await Promise.allSettled([
+    a.whatsapp ? avisarEquipe(agente, a.whatsapp) : null,
+    a.email ? enviarEmail(a.email.assunto, a.email.corpo) : null,
+  ]);
+}
+
+/**
+ * O canal que chama — desligado sem `WHATSAPP_EQUIPE`, e registrando a
+ * tentativa do mesmo jeito. Dá pra conferir o texto de um alerta antes de
+ * existir grupo ligado.
+ */
+export async function avisarEquipe(agente: Origem, mensagem: string): Promise<void> {
+  const destino = process.env.WHATSAPP_EQUIPE;
+  console.log(`[${agente}] ${mensagem}`);
+  if (!destino) return;
+  await enviarMensagem(destino, mensagem);
+}
 
 /** Manda a mensagem da oferta e marca a linha como entregue. */
 export async function entregar(
@@ -181,7 +226,7 @@ export async function entregar(
     .from(schema.corretor)
     .where(eq(schema.corretor.idCorretor, idCorretor));
 
-  await enviarMensagem(c?.telefone, mensagem);
+  await enviarMensagem(decifrar(c?.telefone), mensagem);
 
   // Marca mesmo se o canal falhou: o registro diz que a tentativa foi feita, e
   // repetir a cada minuto até o canal voltar seria pior que perder uma.

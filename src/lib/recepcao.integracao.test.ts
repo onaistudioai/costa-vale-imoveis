@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db, pool, schema } from "@/lib/db";
 import { pedirFusao, receber } from "./recepcao";
 import { fundir } from "./identidade-db";
+import { cifrar, indice } from "@/lib/cripto";
 
 /**
  * A costura que faltava: identidade valendo na entrada de verdade.
@@ -135,7 +136,8 @@ d("quem some e volta", () => {
     await db.insert(schema.identidade).values({
       idCliente: c!.idCliente,
       canal: "whatsapp",
-      identificador: "5511900000001",
+      identificador: cifrar("5511900000001")!,
+      identificadorIndice: indice("5511900000001"),
     });
 
     await db.insert(schema.atendimento).values({

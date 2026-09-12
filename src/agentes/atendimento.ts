@@ -2,6 +2,8 @@ import { z } from "zod";
 import { casarComEstoque, type ImovelOfertavel } from "@/regras/match";
 import type { AgenteContexto } from "./contrato";
 import type { Extrator } from "./modelo";
+import { classificar } from "@/regras/faixa";
+import { revisarSePreciso } from "@/mesa";
 
 /**
  * Agente 4 — Atendimento 24/7 e Qualificação.
@@ -189,6 +191,13 @@ export async function atender(
   // Comportamento N3: fora do padrão fala com humano diretamente, EM VEZ DE
   // acionar outro agente. Nada de handoff pro Agente 3 aqui.
   if (extracao.foraDoPadrao) {
+    // Amarela, e este é o caso que mais justifica a mesa existir: permuta,
+    // litígio ou proposta atípica não são leitura ruim — o modelo entendeu
+    // bem, só não sabe o que fazer. Nada foi escrito, nada custa dinheiro, e
+    // ainda assim precisa de julgamento. É exatamente o meio-termo que antes
+    // caía na fila sem ninguém ter pensado no caso.
+    const faixa = classificar({ confianca: "media" });
+
     await ctx.pedirAprovacao({
       tipo: "escalacao_n3",
       entidade: "cliente",
@@ -199,6 +208,15 @@ export async function atender(
         resumo: extracao.resumo,
         mensagem: entrada.mensagem,
       },
+      faixa,
+      proposta: await revisarSePreciso(faixa, extrair, {
+        assunto: "Conversa de cliente fora do padrão de atendimento",
+        fatos: [
+          `Canal: ${entrada.canal}.`,
+          `O que o cliente escreveu: "${entrada.mensagem}"`,
+          `Leitura do atendimento: ${extracao.resumo}`,
+        ].join("\n"),
+      }),
     });
     return { resposta, candidatos: candidatos.map((c) => c.idImovel), escalacao: { motivo: "conversa_fora_do_padrao" } };
   }

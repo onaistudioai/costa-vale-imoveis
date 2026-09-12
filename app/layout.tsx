@@ -23,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/alterar">Alterar</Link>
             <Link href="/consulta">Perguntar</Link>
             <Link href="/mensagens">Mensagens</Link>
+            <Link href="/automatico">Automático</Link>
             <Link href="/cerebro">Cérebro</Link>
           </nav>
         </header>

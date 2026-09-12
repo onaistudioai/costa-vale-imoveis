@@ -2,6 +2,7 @@ import { and, eq, ilike, or, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { CAMPOS_EDITAVEIS, type Alteracao } from "@/regras/alteracao";
 import type { Candidato, PortasAlterador } from "@/agentes/alterador";
+import { cifrar, decifrar, indice } from "@/lib/cripto";
 
 /**
  * As portas do Agente 6 sobre o banco.
@@ -43,7 +44,12 @@ export const portasAlteradorDb: PortasAlterador = {
       return linhas.map(
         (c): Candidato => ({
           id: c.idCliente,
-          rotulo: `${c.nome}${c.telefone ? ` — ${c.telefone}` : ""}`,
+          // Decifrar aqui, na borda: o rótulo é o que a pessoa lê pra saber
+          // qual dos três "Ana Silva" ela está prestes a alterar.
+          rotulo: (() => {
+            const tel = decifrar(c.telefone);
+            return `${c.nome}${tel ? ` — ${tel}` : ""}`;
+          })(),
           valorAtual: valorDoCliente(c, campo),
         }),
       );
@@ -98,9 +104,17 @@ export const portasAlteradorDb: PortasAlterador = {
         .set({ [a.campo]: a.valorNovo })
         .where(eq(schema.imovel.idImovel, a.idEntidade));
     } else {
+      // Telefone e e-mail vão cifrados; o e-mail leva junto o índice cego,
+      // senão a aproximação de identidade para de achar quem já existe.
+      const valor = ehPii(a.campo) ? cifrar(a.valorNovo) : a.valorNovo;
       await db
         .update(schema.cliente)
-        .set({ [a.campo]: a.valorNovo })
+        .set({
+          [a.campo]: valor,
+          ...(a.campo === "email"
+            ? { emailIndice: a.valorNovo ? indice(a.valorNovo) : null }
+            : {}),
+        })
         .where(eq(schema.cliente.idCliente, a.idEntidade));
     }
 
@@ -114,8 +128,11 @@ export const portasAlteradorDb: PortasAlterador = {
         entidade: a.entidade,
         idEntidade: a.idEntidade,
         campo: `${a.entidade}.${a.campo}`,
-        valorAnterior: a.valorAnterior,
-        valorNovo: a.valorNovo,
+        // A trilha guarda "de → para" cifrado quando o campo é PII. Um log com
+        // o telefone em claro devolveria, num dump, exatamente o que a coluna
+        // cifrada esconde — a auditoria não pode ser a porta dos fundos.
+        valorAnterior: ehPii(a.campo) ? cifrar(a.valorAnterior) : a.valorAnterior,
+        valorNovo: ehPii(a.campo) ? cifrar(a.valorNovo) : a.valorNovo,
         aprovadoPor: por,
         idEvento,
       })
@@ -142,14 +159,17 @@ function valorDoImovel(i: typeof schema.imovel.$inferSelect, campo: string): str
   }
 }
 
+/** Os campos do cliente que moram cifrados. `nome` não é um deles: é o rótulo. */
+const ehPii = (campo: string) => campo === "telefone" || campo === "email";
+
 function valorDoCliente(c: typeof schema.cliente.$inferSelect, campo: string): string | null {
   switch (campo) {
     case "nome":
       return c.nome;
     case "telefone":
-      return c.telefone;
+      return decifrar(c.telefone);
     case "email":
-      return c.email;
+      return decifrar(c.email);
     default:
       return null;
   }

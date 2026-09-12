@@ -36,6 +36,17 @@ if (process.env.TEST_DATABASE_URL) {
   delete process.env.DATABASE_URL_LEITURA;
 }
 
+/**
+ * Chaves de PII fixas para a suíte.
+ *
+ * Não é segredo nenhum e não pode ser: o teste que prova que o telefone volta
+ * inteiro precisa cifrar e decifrar com a mesma chave a cada rodada. As de
+ * verdade vivem só no ambiente — e é justamente por o código exigir a variável
+ * que elas não podem ter valor-padrão fora daqui.
+ */
+process.env.PII_KEY ??= "11".repeat(32);
+process.env.PII_INDEX_KEY ??= "22".repeat(32);
+
 export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },

@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { normalizar, nucleos, resolverIdentidade, type Veredito } from "@/regras/identidade";
 import type { CanalIdentidade, Identidade, SinaisContato } from "@/tipos";
+import { cifrar, decifrar, indice } from "@/lib/cripto";
 
 /**
  * Reconhecer quem chegou, sem telefone.
@@ -14,12 +15,25 @@ import type { CanalIdentidade, Identidade, SinaisContato } from "@/tipos";
  *
  * O passo 2 é o que mantém isso barato: comparar contra todo mundo seria
  * varredura de tabela a cada mensagem recebida, e o sistema recebe mensagem a
- * noite toda. Os candidatos saem de três buscas indexáveis — mesmo e-mail,
- * apelido parecido, e quem falou do mesmo imóvel nos últimos dias.
+ * noite toda. Os candidatos saem de três buscas — mesmo e-mail, apelido
+ * parecido, e quem falou do mesmo imóvel nos últimos dias.
+ *
+ * O `identificador` fica cifrado no banco (`src/lib/cripto.ts`), o que muda
+ * duas coisas aqui: a busca exata passa pelo índice cego, e a busca difusa
+ * sobre ele deixou de ser `ILIKE` no Postgres — vira comparação em memória,
+ * porque `%jumendes%` não casa com ciphertext. O apelido continua em claro e
+ * continua no `ILIKE`: é nome de exibição, não identificador de canal.
  */
 
 /** Quantos candidatos vale a pena comparar. Acima disso o sinal já é ruído. */
 const TETO_CANDIDATOS = 25;
+
+/**
+ * Teto da varredura decifrada. Existe porque a busca difusa sobre o
+ * identificador cifrado não tem índice — e uma consulta sem teto é a que
+ * derruba o sistema no dia em que a base cresce sem ninguém olhar.
+ */
+const TETO_VARREDURA = 5_000;
 
 export async function identidadesDe(idCliente: string): Promise<Identidade[]> {
   const linhas = await db
@@ -28,12 +42,18 @@ export async function identidadesDe(idCliente: string): Promise<Identidade[]> {
     .where(eq(schema.identidade.idCliente, idCliente));
   return linhas.map((l) => ({
     canal: l.canal,
-    identificador: l.identificador,
+    identificador: decifrar(l.identificador) ?? "",
     apelido: l.apelido,
   }));
 }
 
-/** Passo 1: a âncora determinística. Uma consulta, um índice único. */
+/**
+ * Passo 1: a âncora determinística. Uma consulta, um índice único.
+ *
+ * Pelo índice cego, não pela cifra: duas gravações do mesmo `@` produzem
+ * cifras diferentes de propósito, então `WHERE identificador = ?` nunca
+ * acharia nada.
+ */
 export async function clientePorIdentidade(
   canal: CanalIdentidade,
   identificador: string,
@@ -44,7 +64,7 @@ export async function clientePorIdentidade(
     .where(
       and(
         eq(schema.identidade.canal, canal),
-        eq(schema.identidade.identificador, normalizar(identificador)),
+        eq(schema.identidade.identificadorIndice, indice(normalizar(identificador))),
       ),
     )
     .limit(1);
@@ -69,25 +89,42 @@ async function levantarCandidatos(novo: SinaisContato): Promise<string[]> {
     const porEmail = await db
       .select({ id: schema.cliente.idCliente })
       .from(schema.cliente)
-      .where(eq(sql`lower(${schema.cliente.email})`, novo.email.toLowerCase()))
+      .where(eq(schema.cliente.emailIndice, indice(novo.email)))
       .limit(5);
     porEmail.forEach((c) => ids.add(c.id));
   }
 
-  for (const nucleo of meus) {
-    // O ILIKE sobre o identificador sem pontuação é o que faz `ju.mendes.sp`,
-    // `ju_mendes` e `jumendes` caírem na mesma busca.
+  if (meus.length > 0) {
+    // O apelido continua no banco: está em claro e o índice funciona.
     const porApelido = await db
       .select({ id: schema.identidade.idCliente })
       .from(schema.identidade)
       .where(
         or(
-          sql`replace(replace(${schema.identidade.identificador}, '.', ''), '_', '') ILIKE ${`%${nucleo}%`}`,
-          sql`replace(replace(lower(coalesce(${schema.identidade.apelido}, '')), '.', ''), ' ', '') ILIKE ${`%${nucleo}%`}`,
+          ...meus.map(
+            (nucleo) =>
+              sql`replace(replace(lower(coalesce(${schema.identidade.apelido}, '')), '.', ''), ' ', '') ILIKE ${`%${nucleo}%`}`,
+          ),
         ),
       )
       .limit(TETO_CANDIDATOS);
     porApelido.forEach((c) => ids.add(c.id));
+
+    // O identificador não: cifrado, `%jumendes%` não casa com nada. A mesma
+    // comparação acontece aqui, depois de decifrar — é o que mantém
+    // `ju.mendes.sp`, `ju_mendes` e `jumendes` caindo na mesma pessoa.
+    //
+    // ponytail: varredura da tabela; trocar por pg_trgm sobre um índice cego
+    // de n-gramas se `identidade` passar de ~50k linhas.
+    const todas = await db
+      .select({ id: schema.identidade.idCliente, cifra: schema.identidade.identificador })
+      .from(schema.identidade)
+      .limit(TETO_VARREDURA);
+
+    for (const linha of todas) {
+      const alvo = (decifrar(linha.cifra) ?? "").replace(/[._]/g, "").toLowerCase();
+      if (alvo && meus.some((nucleo) => alvo.includes(nucleo))) ids.add(linha.id);
+    }
   }
 
   if (novo.idImovelCitado) {
@@ -143,10 +180,11 @@ async function sinaisDe(
       // O primeiro canal conhecido serve de rótulo; a comparação real olha a
       // lista inteira em `identidades`.
       canal: (minhas[0]?.canal ?? "site") as CanalIdentidade,
-      identificador: minhas[0]?.identificador ?? "",
+      identificador: decifrar(minhas[0]?.identificador) ?? "",
       nome: c.nome,
-      email: c.email,
-      cpf: c.cpfCnpj,
+      // A regra pura compara valores em claro; decifrar é aqui, na borda.
+      email: decifrar(c.email),
+      cpf: decifrar(c.cpfCnpj),
       idImovelCitado: a?.idImovel ?? null,
       ultimaAtividade: a?.ultimaInteracao ?? c.dataEntrada,
       busca: b
@@ -159,7 +197,7 @@ async function sinaisDe(
         : null,
       identidades: minhas.map((i) => ({
         canal: i.canal,
-        identificador: i.identificador,
+        identificador: decifrar(i.identificador) ?? "",
         apelido: i.apelido,
       })),
     };
@@ -198,12 +236,15 @@ export async function vincular(
     .values({
       idCliente,
       canal: novo.canal,
-      identificador: normalizar(novo.identificador),
+      // Normaliza primeiro, cifra depois: normalizar ciphertext é impossível,
+      // e é a forma normalizada que precisa bater entre canais.
+      identificador: cifrar(normalizar(novo.identificador))!,
+      identificadorIndice: indice(normalizar(novo.identificador)),
       apelido: novo.apelido ?? novo.nome ?? null,
       origem,
     })
     .onConflictDoNothing({
-      target: [schema.identidade.canal, schema.identidade.identificador],
+      target: [schema.identidade.canal, schema.identidade.identificadorIndice],
     });
 }
 

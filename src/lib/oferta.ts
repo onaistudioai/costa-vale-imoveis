@@ -2,6 +2,7 @@ import { and, desc, eq, gt, isNotNull } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { retomar } from "@/grafo/runtime";
 import { normalizar } from "@/lib/canal";
+import { decifrar } from "@/lib/cripto";
 
 /**
  * O aceite de uma oferta de lead, num lugar só.
@@ -20,7 +21,13 @@ export async function corretorPorTelefone(identificador: string) {
     .from(schema.corretor)
     .where(eq(schema.corretor.ativo, true));
 
-  return todos.find((c) => c.tel && normalizar(c.tel) === alvo) ?? null;
+  // O telefone está cifrado, então a comparação acontece depois de decifrar.
+  // A varredura já era em memória antes disso: a lista de corretores ativos de
+  // uma imobiliária cabe folgado na resposta de uma consulta.
+  return todos.find((c) => {
+    const tel = decifrar(c.tel);
+    return tel && normalizar(tel) === alvo;
+  }) ?? null;
 }
 
 /** A oferta que este corretor tem em aberto agora, se houver. */

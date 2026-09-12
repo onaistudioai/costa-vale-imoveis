@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { AgenteContexto } from "./contrato";
 import type { Extrator } from "./modelo";
+import { classificar } from "@/regras/faixa";
+import { revisarSePreciso } from "@/mesa";
 import type { EstadoComercial, EstadoOperacional } from "@/tipos";
 
 /**
@@ -149,11 +151,25 @@ export async function curar(
   let anunciosCriados: string[] = [];
 
   if (podeIrPraFila) {
+    // Subir anúncio desfaz: derruba de novo e o gasto para. O que pesa aqui é
+    // só o quanto o modelo entendeu do laudo.
+    const faixa = classificar({ confianca: extracao.confianca });
+
     const decisao = await ctx.pedirAprovacao({
       tipo: "subir_anuncio",
       entidade: "imovel",
       idEntidade: imovel.idImovel,
       contexto: { resumo: extracao.resumo, confianca: extracao.confianca },
+      faixa,
+      proposta: await revisarSePreciso(faixa, extrair, {
+        assunto: `Subir anúncio do imóvel ${imovel.idImovel}`,
+        fatos: [
+          `Estado operacional apurado: ${novo}.`,
+          `Estado comercial: ${imovel.estadoComercial}.`,
+          `Confiança da leitura do laudo: ${extracao.confianca}.`,
+          `Leitura do laudo: ${extracao.resumo}`,
+        ].join("\n"),
+      }),
     });
     if (decisao.aprovado) {
       // Ordem importa: o imóvel precisa estar `no_ar` antes de existir linha em

@@ -73,7 +73,9 @@ export default async function Funil() {
                 </option>
               ))}
             </select>
-            <input type="text" name="por" placeholder="seu nome" required />
+            {/* Sem campo de nome: quem encerra é quem está logado. Pedir o
+                nome à mão era pedir pra ser preenchido errado — e o campo era
+                alcançável por quem montasse o POST fora do painel. */}
             <button type="submit">Encerrar</button>
           </form>
         )}

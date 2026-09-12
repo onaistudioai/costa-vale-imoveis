@@ -74,6 +74,19 @@ export async function receber(c: Contato, agora = new Date()): Promise<Recepcao>
 
   if (veredito.acao === "vincular") {
     idCliente = veredito.idCliente;
+
+    // HOOTL declarado: reconhecer alguém por CPF igual ou por um canal já
+    // registrado nele é consulta de chave, não palpite — roda sozinho de
+    // propósito. Mas o que roda sozinho tem que aparecer em algum lugar, senão
+    // não há como conferir que reconheceu certo.
+    await db.insert(schema.logEvento).values({
+      agenteOrigem: "regra",
+      entidade: "cliente",
+      idEntidade: idCliente,
+      campo: "identidade.reconhecida",
+      valorAnterior: c.canal,
+      valorNovo: veredito.motivo,
+    });
   } else {
     // Tanto o palpite quanto o desconhecido criam cadastro. A diferença é que
     // o palpite também abre o pedido de fusão — a conversa não fica esperando.
@@ -84,6 +97,19 @@ export async function receber(c: Contato, agora = new Date()): Promise<Recepcao>
 
     idCliente = criado!.id;
     novo = true;
+
+    // Criar cadastro sozinho é decisão consciente e está certa: duplicata é
+    // reversível com um clique, lead sem resposta não volta. O que faltava era
+    // o rastro — sem ele, a única prova de que o sistema criou alguém é a
+    // `dataEntrada` da linha.
+    await db.insert(schema.logEvento).values({
+      agenteOrigem: "regra",
+      entidade: "cliente",
+      idEntidade: idCliente,
+      campo: "cliente.criado",
+      valorAnterior: c.canal,
+      valorNovo: veredito.acao === "sugerir_fusao" ? "com palpite de fusão" : "sem palpite",
+    });
 
     if (veredito.acao === "sugerir_fusao") {
       const [cand] = await db
@@ -145,6 +171,24 @@ async function tocarAtendimento(
     .limit(1);
 
   if (existente) {
+    const reabrindo = existente.estado === "fechado";
+
+    // O motivo do desfecho é apagado logo abaixo, e ele foi escrito por gente.
+    // Sem esta linha, o relatório de "por que perdemos" perde um caso toda vez
+    // que um cliente encerrado manda um "oi" — silenciosamente, e sem jeito de
+    // recuperar. `funil.ts` diz que fechar exige motivo porque é a pergunta que
+    // paga o relatório; então o motivo não pode sumir quando o caso reabre.
+    if (reabrindo && existente.motivoDesfecho) {
+      await db.insert(schema.logEvento).values({
+        agenteOrigem: "regra",
+        entidade: "atendimento",
+        idEntidade: existente.idAtendimento,
+        campo: "atendimento.reabertura",
+        valorAnterior: existente.motivoDesfecho,
+        valorNovo: "reaberto pelo cliente",
+      });
+    }
+
     await db
       .update(schema.atendimento)
       .set({
@@ -154,7 +198,7 @@ async function tocarAtendimento(
         // Reabre o que estava esperando desfecho: quem voltou a falar não
         // precisa de ponto final, precisa de resposta.
         precisaDesfecho: false,
-        ...(existente.estado === "fechado"
+        ...(reabrindo
           ? { etapa: "primeiro_contato" as const, motivoDesfecho: null }
           : {}),
       })
