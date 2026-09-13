@@ -18,7 +18,7 @@ import os
 from crewai import LLM, Agent, Crew, Process, Task
 from pydantic import BaseModel
 
-from .modelos import Caso, Consolidado, Olhar
+from .modelos import Caso, Consolidado, Decisao, Olhar
 from .regra import aplicar_divergencia
 
 # O CrewAI 1.15 não tem provedor Groq nem traz o LiteLLM. O Groq fala o
@@ -123,9 +123,23 @@ def lembrar_parecidos(caso: Caso) -> str:
         return ""
     linhas = "\n".join(f"- {a.record.content}" for a in achados)
     return (
-        "\n\nCASOS PARECIDOS QUE A MESA JÁ VIU (sugestões anteriores da mesa, "
-        "NÃO decisões de gente — use como contexto, não como regra):\n" + linhas
+        "\n\nCASOS PARECIDOS JÁ VISTOS ([gente] é o que uma pessoa decidiu; "
+        "[mesa] é só sugestão anterior da mesa — use como contexto, não como regra):\n"
+        + linhas
     )
+
+
+def lembranca_humana(d: Decisao) -> str:
+    decisao = "aprovou" if d.aprovado else "negou"
+    return f"[gente] {d.assunto} → uma pessoa {decisao}" + (f": {d.motivo}" if d.motivo else "")
+
+
+def guardar_decisao(d: Decisao) -> None:
+    """A lembrança que vale: pesa mais que a da própria mesa na busca."""
+    m = memoria()
+    if m is None:
+        return
+    m.remember(lembranca_humana(d), scope="/casos", categories=["humano"], importance=0.9)
 
 
 def guardar(caso: Caso, c: Consolidado) -> None:
@@ -135,7 +149,7 @@ def guardar(caso: Caso, c: Consolidado) -> None:
     # Escopo, categoria e importância dados: sem eles o CrewAI chama o modelo
     # para inferir os três a cada gravação.
     m.remember(
-        f"{caso.assunto} → {c.recomendacao.value}: {c.justificativa}",
+        f"[mesa] {caso.assunto} → {c.recomendacao.value}: {c.justificativa}",
         scope="/casos",
         categories=["mesa"],
         importance=0.5,

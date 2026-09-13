@@ -132,10 +132,13 @@ modelo lembrando de si mesmo — se ele errou uma vez, tende a repetir com mais
 confiança. Por isso o texto injetado diz explicitamente "sugestões anteriores
 da mesa, NÃO decisões de gente".
 
-O aprendizado que vale é outro: **guardar o que a pessoa decidiu**. O caminho
-está pronto do lado Python (`guardar()`); falta o painel chamar o serviço
-quando alguém aprova ou nega em `app/actions.ts`. Não foi feito porque exige
-decidir o que conta como "caso parecido" — e essa decisão é de negócio.
+O aprendizado que vale é outro: **guardar o que a pessoa decidiu**. Quando
+alguém aprova ou nega um pedido que passou pela mesa, `decidir()`
+(`app/actions.ts`) chama `POST /decisao`, e a memória grava
+`[gente] assunto → uma pessoa negou: motivo`, com peso maior que as lembranças
+`[mesa]`. "Caso parecido" é o mesmo `assunto` que a mesa já usa para buscar —
+o critério mais simples; se a operação mostrar que ele agrupa casos que não
+se parecem, é ali que se mexe.
 
 ---
 

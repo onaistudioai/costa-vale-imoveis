@@ -27,8 +27,8 @@ truststore.inject_into_ssl()
 
 from fastapi import FastAPI  # noqa: E402
 
-from .crew import reunir  # noqa: E402
-from .modelos import Caso, Consolidado  # noqa: E402
+from .crew import guardar_decisao, reunir  # noqa: E402
+from .modelos import Caso, Consolidado, Decisao  # noqa: E402
 
 app = FastAPI(title="mesa")
 
@@ -43,3 +43,8 @@ def saude() -> dict:
 @app.post("/mesa", response_model=Consolidado)
 def mesa(caso: Caso) -> Consolidado:
     return reunir(caso)
+
+
+@app.post("/decisao", status_code=204)
+def decisao(d: Decisao) -> None:
+    guardar_decisao(d)

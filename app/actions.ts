@@ -13,6 +13,7 @@ import { registrarLeitura } from "@/lib/leitura-db";
 import { escrever, versionar } from "@/cerebro/db";
 import { exigirUsuario } from "@/lib/acesso";
 import { decidirOferta } from "@/lib/oferta";
+import { lembrarDecisao } from "@/mesa";
 
 /**
  * Decidir um item da fila.
@@ -80,6 +81,8 @@ export async function decidir(formData: FormData) {
   // A decisão fica gravada ANTES da retomada: se o grafo falhar ao voltar, o
   // registro auditável não se perde e a retomada pode ser repetida — o
   // caminho contrário perderia a decisão da pessoa.
+  await lembrarDecisao(pedido.proposta, aprovado, motivo);
+
   if (pedido.threadId) {
     await retomar(pedido.threadId, { aprovado, por, motivo: motivo ?? undefined });
   }

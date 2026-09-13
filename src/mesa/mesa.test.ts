@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Consolidado, frase, revisarSePreciso, type Caso } from "./index";
+import { Consolidado, frase, lembrarDecisao, revisarSePreciso, type Caso } from "./index";
 
 /**
  * A lógica da mesa (papéis, paralelismo, regra de divergência) mora no serviço
@@ -35,7 +35,7 @@ describe("revisarSePreciso — quem a faixa deixa entrar", () => {
   it("amarela chama o serviço e devolve a proposta", async () => {
     const f = servico(OK);
 
-    expect(await revisarSePreciso("amarela", CASO)).toEqual(OK);
+    expect(await revisarSePreciso("amarela", CASO)).toEqual({ ...OK, assunto: CASO.assunto });
     expect(f).toHaveBeenCalledOnce();
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("http://mesa.teste/mesa");
@@ -93,5 +93,31 @@ describe("frase", () => {
     expect(frase({ ...OK, recomendacao: "precisa_humano", convergiu: false })).toContain(
       "seu olhar",
     );
+  });
+});
+
+describe("lembrarDecisao — a decisão da pessoa volta pra mesa", () => {
+  it("manda assunto, decisão e motivo, e nada dos fatos", async () => {
+    const f = servico({});
+    await lembrarDecisao({ ...OK, assunto: CASO.assunto }, false, "sem avaliação");
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("http://mesa.teste/decisao");
+    expect(JSON.parse(init.body as string)).toEqual({
+      assunto: CASO.assunto,
+      aprovado: false,
+      motivo: "sem avaliação",
+    });
+  });
+
+  it("pedido que não passou pela mesa não chama o serviço", async () => {
+    const f = servico({});
+    await lembrarDecisao(null, true, null);
+    await lembrarDecisao(OK, true, null); // proposta antiga, sem assunto
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  it("serviço fora do ar não derruba a decisão", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("ECONNREFUSED"); }));
+    await expect(lembrarDecisao({ assunto: "x" }, true, null)).resolves.toBeUndefined();
   });
 });

@@ -25,6 +25,16 @@ class Caso(BaseModel):
     fatos: str = Field(min_length=1, max_length=4000)
 
 
+class Decisao(BaseModel):
+    """O que uma pessoa decidiu sobre um caso que passou pela mesa."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    assunto: str = Field(min_length=1, max_length=300)
+    aprovado: bool
+    motivo: str | None = Field(default=None, max_length=500)
+
+
 class Olhar(BaseModel):
     leitura: str = Field(description="o que você entendeu do caso, em uma frase")
     preocupacao: str = Field(

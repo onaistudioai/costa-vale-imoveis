@@ -93,15 +93,45 @@ export async function reunir(caso: Caso, url: string): Promise<Consolidado> {
 export async function revisarSePreciso(
   faixa: Faixa,
   caso: Caso,
-): Promise<Consolidado | undefined> {
+): Promise<(Consolidado & { assunto: string }) | undefined> {
   if (!passaPelaMesa(faixa)) return undefined;
   const url = process.env.MESA_URL;
   if (!url) return undefined;
   try {
-    return await reunir(caso, url);
+    // O assunto viaja junto na proposta gravada: é a chave com que a decisão
+    // da pessoa volta pra memória da mesa (`lembrarDecisao`).
+    return { ...(await reunir(caso, url)), assunto: caso.assunto };
   } catch (e) {
     console.warn("[mesa] revisão falhou, seguindo sem proposta:", (e as Error).message);
     return undefined;
+  }
+}
+
+/**
+ * Devolve à mesa o que a pessoa decidiu, pro próximo caso parecido.
+ *
+ * "Parecido" é o mesmo `assunto` que a mesa já usa pra buscar. Só vai o
+ * assunto, a decisão e o motivo escrito pela equipe — nunca os fatos, que
+ * carregam a fala do cliente. Falha não desfaz nada: a decisão já está gravada.
+ */
+export async function lembrarDecisao(
+  proposta: unknown,
+  aprovado: boolean,
+  motivo: string | null,
+): Promise<void> {
+  const url = process.env.MESA_URL;
+  const assunto = (proposta as { assunto?: unknown } | null)?.assunto;
+  if (!url || typeof assunto !== "string") return;
+  try {
+    const r = await fetch(`${url.replace(/\/$/, "")}/decisao`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ assunto, aprovado, motivo: motivo?.slice(0, 500) ?? null }),
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!r.ok) throw new Error(`serviço da mesa respondeu ${r.status}`);
+  } catch (e) {
+    console.warn("[mesa] decisão não foi guardada na memória:", (e as Error).message);
   }
 }
 

@@ -1,8 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from mesa.crew import montar
-from mesa.modelos import Caso, Consolidado, Olhar
+from mesa.crew import lembranca_humana, montar
+from mesa.modelos import Caso, Consolidado, Decisao, Olhar
 from mesa.modelos import Recomendacao as R
 from mesa.regra import aplicar_divergencia
 
@@ -48,3 +48,15 @@ def test_nenhum_agente_delega_e_os_olhares_nao_se_leem(monkeypatch):
     # `== []` e não `not ...`: o padrão do CrewAI é um marcador verdadeiro
     # (NOT_SPECIFIED) que injeta a saída das tasks anteriores.
     assert t_caut.context == [] and t_oper.context == []
+
+
+def test_decisao_de_gente_vira_lembranca_marcada():
+    assert lembranca_humana(Decisao(assunto="Permuta", aprovado=False, motivo="sem avaliação")) == (
+        "[gente] Permuta → uma pessoa negou: sem avaliação"
+    )
+    assert lembranca_humana(Decisao(assunto="Permuta", aprovado=True)) == "[gente] Permuta → uma pessoa aprovou"
+
+
+def test_decisao_com_campo_a_mais_e_recusada():
+    with pytest.raises(ValidationError):
+        Decisao(assunto="x", aprovado=True, fatos="fala do cliente")
