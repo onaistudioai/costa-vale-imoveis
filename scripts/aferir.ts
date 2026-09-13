@@ -12,6 +12,10 @@ import {
   resumirConversa,
   type ConferenciaConversa,
 } from "../src/afericao/conversa";
+import { ExtracaoNegociacao, SISTEMA as SISTEMA_NEGOCIACAO } from "../src/agentes/guardiao";
+import { PedidoAlteracao, SISTEMA as SISTEMA_ALTERADOR } from "../src/agentes/alterador";
+import { CASOS_NEGOCIACAO, conferirNegociacao, type ConferenciaNegociacao } from "../src/afericao/negociacao";
+import { CASOS_ALTERACAO, conferirAlteracao, type ConferenciaAlteracao } from "../src/afericao/alteracao";
 import { pool } from "../src/lib/db";
 
 /**
@@ -141,6 +145,48 @@ console.log(`\nconversa: ${rc.ok}/${rc.total}`);
 if (rc.calouCliente.length) console.log(`CALOU CLIENTE: ${rc.calouCliente.join(", ")}`);
 if (rc.deixouPassar.length) console.log(`deixou passar: ${rc.deixouPassar.join(", ")}`);
 if (rc.naoEscalou.length) console.log(`não escalou: ${rc.naoEscalou.join(", ")}`);
+
+// --- Agente 2: o documento da negociação ---
+
+const extrairNegociacao = comProcedencia(extratorGroq("extracao"), { agente: "2_guardiao" }, registrarLeitura);
+
+console.log(`\n--- Agente 2 · prompt ${versaoDoPrompt(SISTEMA_NEGOCIACAO)} · ${CASOS_NEGOCIACAO.length} casos ---\n`);
+
+const negociacoes: ConferenciaNegociacao[] = [];
+for (const caso of CASOS_NEGOCIACAO) {
+  const e = (await comEspera(() =>
+    extrairNegociacao({ schema: ExtracaoNegociacao, sistema: SISTEMA_NEGOCIACAO, entrada: caso.documento }),
+  )) as ExtracaoNegociacao;
+  const c = conferirNegociacao(caso, e);
+  negociacoes.push(c);
+  const marca = c.ok ? "ok" : c.tirouDoMercado ? "GRAVE" : "erro";
+  console.log(`${marca.padEnd(6)}${c.id.padEnd(22)}${c.estadoObtido.padEnd(20)}(esperado ${c.estadoEsperado})`);
+  if (!c.ok) console.log(`       ${c.porque}`);
+}
+console.log(`\nnegociação: ${negociacoes.filter((c) => c.ok).length}/${negociacoes.length}`);
+const tirou = negociacoes.filter((c) => c.tirouDoMercado).map((c) => c.id);
+if (tirou.length) console.log(`TIROU DO MERCADO: ${tirou.join(", ")}`);
+
+// --- Agente 6: o pedido de alteração ---
+
+const extrairAlteracao = comProcedencia(extratorGroq("extracao"), { agente: "6_alterador" }, registrarLeitura);
+
+console.log(`\n--- Agente 6 · prompt ${versaoDoPrompt(SISTEMA_ALTERADOR)} · ${CASOS_ALTERACAO.length} casos ---\n`);
+
+const alteracoes: ConferenciaAlteracao[] = [];
+for (const caso of CASOS_ALTERACAO) {
+  const p = (await comEspera(() =>
+    extrairAlteracao({ schema: PedidoAlteracao, sistema: SISTEMA_ALTERADOR, entrada: caso.texto }),
+  )) as PedidoAlteracao;
+  const c = conferirAlteracao(caso, p);
+  alteracoes.push(c);
+  const marca = c.ok ? "ok" : c.erradoComCerteza ? "GRAVE" : "erro";
+  console.log(`${marca.padEnd(6)}${c.id.padEnd(22)}${c.lido}`);
+  if (!c.ok) console.log(`       esperado ${c.esperado} — ${c.porque}`);
+}
+console.log(`\nalteração: ${alteracoes.filter((c) => c.ok).length}/${alteracoes.length}`);
+const comCerteza = alteracoes.filter((c) => c.erradoComCerteza).map((c) => c.id);
+if (comCerteza.length) console.log(`ERRADO COM CERTEZA: ${comCerteza.join(", ")}`);
 
 // O outro lado da aferição: o rótulo que a equipe já escreveu no painel.
 const painel = await concordanciaDoPainel();

@@ -1,4 +1,8 @@
+import type { PedidoAlteracao } from "@/agentes/alterador";
+import { estadoPorEtapa, type ExtracaoNegociacao } from "@/agentes/guardiao";
+import type { CasoAlteracao } from "./alteracao";
 import type { Caso } from "./casos";
+import type { CasoNegociacao } from "./negociacao";
 
 /**
  * Leitura negada no painel → rascunho de caso de referência.
@@ -34,6 +38,44 @@ export function laudoDaEntrada(entrada: string): Caso["laudo"] {
     }
   }
   return laudo;
+}
+
+/**
+ * Guardião: o documento é a entrada inteira. A negativa não diz o estado certo,
+ * então o rascunho copia o que o modelo leu e o `porque` pede conferência —
+ * quem cola sem ler cola o erro.
+ */
+export function proporNegociacao(
+  l: LeituraNegada,
+  existentes: CasoNegociacao[],
+): CasoNegociacao | null {
+  if (existentes.some((c) => c.documento === l.entrada)) return null;
+  const etapa = (l.saida as { etapa?: ExtracaoNegociacao["etapa"] } | null)?.etapa;
+  return {
+    id: `painel-${l.idLeitura.slice(0, 8)}`,
+    porque: `CONFIRA o estado — o modelo leu "${etapa ?? "?"}" e foi negado: ${l.motivo ?? "(sem motivo)"}`,
+    documento: l.entrada,
+    esperado: { estado: etapa ? estadoPorEtapa(etapa) : "disponivel" },
+  };
+}
+
+/** Alterador: o pedido é a entrada inteira. Mesmo aviso: o esperado é o lido. */
+export function proporAlteracao(
+  l: LeituraNegada,
+  existentes: CasoAlteracao[],
+): CasoAlteracao | null {
+  if (existentes.some((c) => c.texto === l.entrada)) return null;
+  const s = (l.saida ?? {}) as Partial<PedidoAlteracao>;
+  return {
+    id: `painel-${l.idLeitura.slice(0, 8)}`,
+    porque: `CONFIRA campo e valor — foi negado: ${l.motivo ?? "(sem motivo)"}`,
+    texto: l.entrada,
+    esperado: {
+      entidade: s.entidade ?? "imovel",
+      campo: s.campo ?? "",
+      valorNovo: s.valorNovo ?? "",
+    },
+  };
 }
 
 export function propor(l: LeituraNegada, existentes: Caso[]): Caso | null {

@@ -57,7 +57,8 @@ export const PedidoAlteracao = z.object({
 
 export type PedidoAlteracao = z.infer<typeof PedidoAlteracao>;
 
-const SISTEMA = `Você lê pedidos de alteração de cadastro de uma imobiliária, escritos em português do Brasil por gente da equipe, em linguagem informal.
+/** Exportado pela mesma razão do Curador: a aferição roda este texto exato. */
+export const SISTEMA = `Você lê pedidos de alteração de cadastro de uma imobiliária, escritos em português do Brasil por gente da equipe, em linguagem informal.
 
 Sua tarefa é APENAS traduzir o pedido em campos estruturados. Você não decide se a alteração deve acontecer.
 

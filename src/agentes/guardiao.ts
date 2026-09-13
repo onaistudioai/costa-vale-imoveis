@@ -34,7 +34,8 @@ export const ExtracaoNegociacao = z.object({
 
 export type ExtracaoNegociacao = z.infer<typeof ExtracaoNegociacao>;
 
-const SISTEMA = `Você lê documentos de negociação imobiliária em português do Brasil (propostas, contraproposta, e-mails, anotações de corretor).
+/** Exportado pela mesma razão do Curador: a aferição roda este texto exato. */
+export const SISTEMA = `Você lê documentos de negociação imobiliária em português do Brasil (propostas, contraproposta, e-mails, anotações de corretor).
 
 Identifique a etapa em que a negociação está. Regras:
 - "proposta_feita": houve oferta, mas ninguém aceitou ainda.
