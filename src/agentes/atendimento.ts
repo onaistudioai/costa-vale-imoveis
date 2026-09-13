@@ -209,7 +209,7 @@ export async function atender(
         mensagem: entrada.mensagem,
       },
       faixa,
-      proposta: await revisarSePreciso(faixa, extrair, {
+      proposta: await revisarSePreciso(faixa, {
         assunto: "Conversa de cliente fora do padrão de atendimento",
         fatos: [
           `Canal: ${entrada.canal}.`,

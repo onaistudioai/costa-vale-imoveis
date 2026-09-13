@@ -1,0 +1,16 @@
+[project]
+name = "mesa"
+version = "0.1.0"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "crewai==1.15.21",
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "sentence-transformers>=6.0.1",
+    "truststore>=0.10.4",
+    "uvicorn[standard]>=0.52.4",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

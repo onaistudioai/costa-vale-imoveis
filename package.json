@@ -20,6 +20,7 @@
     "procedencia": "dotenv -e .env -- tsx scripts/procedencia.ts",
     "aferir": "dotenv -e .env -- tsx scripts/aferir.ts",
     "acesso": "tsx scripts/acesso.ts",
+    "mesa": "dotenv -e .env -- uv run --system-certs --directory servicos/mesa uvicorn mesa.app:app --port 8001",
     "simular": "tsx scripts/simular.ts",
     "cifrar-pii": "dotenv -e .env -- tsx scripts/cifrar-pii.ts"
   },

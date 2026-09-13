@@ -1,0 +1,4 @@
+.venv/
+.memoria/
+__pycache__/
+.pytest_cache/
