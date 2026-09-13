@@ -130,7 +130,7 @@ export async function guardar(
       idEntidade: entrada.idImovel,
       contexto,
       faixa,
-      proposta: await revisarSePreciso(faixa, extrair, {
+      proposta: await revisarSePreciso(faixa, {
         assunto: `Derrubar mídia paga do imóvel ${entrada.idImovel}`,
         fatos: [
           `Negociação foi para: ${extracao.etapa}.`,

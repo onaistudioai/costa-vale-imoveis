@@ -1,0 +1,48 @@
+{
+  "$defs": {
+    "Recomendacao": {
+      "enum": [
+        "aprovar",
+        "negar",
+        "precisa_humano"
+      ],
+      "title": "Recomendacao",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "recomendacao": {
+      "$ref": "#/$defs/Recomendacao"
+    },
+    "justificativa": {
+      "description": "por que, em uma ou duas frases, para quem vai decidir",
+      "title": "Justificativa",
+      "type": "string"
+    },
+    "convergiu": {
+      "description": "true só se os dois olhares apontam para o mesmo lado",
+      "title": "Convergiu",
+      "type": "boolean"
+    },
+    "ressalva": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "o que ficou em aberto; null se não ficou nada",
+      "title": "Ressalva"
+    }
+  },
+  "required": [
+    "recomendacao",
+    "justificativa",
+    "convergiu",
+    "ressalva"
+  ],
+  "title": "Consolidado",
+  "type": "object"
+}

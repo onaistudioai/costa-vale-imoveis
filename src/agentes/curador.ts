@@ -161,7 +161,7 @@ export async function curar(
       idEntidade: imovel.idImovel,
       contexto: { resumo: extracao.resumo, confianca: extracao.confianca },
       faixa,
-      proposta: await revisarSePreciso(faixa, extrair, {
+      proposta: await revisarSePreciso(faixa, {
         assunto: `Subir anúncio do imóvel ${imovel.idImovel}`,
         fatos: [
           `Estado operacional apurado: ${novo}.`,
