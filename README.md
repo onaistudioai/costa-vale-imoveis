@@ -65,6 +65,42 @@ nível de autonomia são eixos independentes. O Guardião é o mais sofisticado 
 que mais precisa de gente; o Roteador é quase um gatilho e o que age mais
 sozinho.
 
+### Como os agentes trabalham juntos
+
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#fbfaf8", "primaryColor": "#ffffff", "primaryBorderColor": "#e4e0d8", "primaryTextColor": "#1c1a17", "lineColor": "#6d675e", "clusterBkg": "#fbfaf8", "clusterBorder": "#e4e0d8", "fontFamily": "system-ui, sans-serif"}}}%%
+flowchart TB
+  evento["Evento chega<br/>laudo, documento, mensagem, pedido da equipe"] --> despachante["Despachante<br/>um trabalho por imóvel ou cliente,<br/>quem tem gente esperando vai primeiro"]
+  despachante -->|laudo| curador["1 Curador<br/>estado operacional e preço"]
+  despachante -->|documento| guardiao["2 Guardião<br/>estado comercial e mídia"]
+  despachante -->|mensagem| atendimento["4 Atendimento<br/>conversa e qualificação"]
+  despachante -->|pedido de alteração| alterador["6 Alterador<br/>cadastro"]
+  atendimento -->|lead qualificado| roteador["3 Roteador<br/>corretor e oferta com prazo"]
+
+  curador & guardiao & roteador & alterador & atendimento <-.-> gate{"Fila de decisões<br/>o agente para, a pessoa decide<br/>e ele continua"}
+
+  banco[("Banco<br/>cada agente escreve só nos próprios campos")]
+  curador & guardiao & roteador & atendimento & alterador --> banco
+  consulta["5 Consulta<br/>só lê, por conexão de leitura"] --> banco
+
+  subgraph base["Base comum a todos"]
+    direction LR
+    faixa["Faixa de risco"] ~~~ contrato["Contrato do agente"] ~~~ modo["Modo de autonomia"] ~~~ porta["Porta única do modelo"]
+  end
+  banco ~~~ base
+
+  classDef tinta fill:#1c1a17,color:#fbfaf8,stroke:#1c1a17
+  classDef leitura stroke-dasharray:4 3
+  class gate tinta
+  class consulta leitura
+```
+
+- **Quem começa é o evento.** Cada tipo de evento tem um único agente dono, e o despachante garante que dois trabalhos no mesmo imóvel ou cliente não rodem ao mesmo tempo.
+- **A única passagem direta é do Atendimento para o Roteador**, quando o lead fica qualificado. Uma escalação sai para a fila de decisões.
+- **Os outros se coordenam pelo banco.** O Curador cuida do estado operacional, o Guardião do comercial, o Alterador do cadastro, e o contrato impede que um escreva no campo do outro.
+- **Quando precisa de gente, o agente para.** O pedido vai para a fila, e a decisão volta para o mesmo agente, que continua de onde parou.
+- **Regras próprias de cada um:** Curador decide o estado do imóvel no próprio arquivo; Guardião usa `publicacao.ts`; Roteador, `roteamento.ts`; Atendimento, `match.ts`; Alterador, `alteracao.ts`.
+
 ## Como o sistema trabalha
 
 **Cada agente só escreve nos próprios campos.** Cada um recebe um contexto
