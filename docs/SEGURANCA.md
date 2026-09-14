@@ -42,14 +42,14 @@ Nada a proteger, e vale registrar por quê:
 ## Segredos
 
 O `.env` nunca foi commitado (`git log --all -- .env` volta vazio) e o
-`.gitignore` cobre `.env*`. Na Vercel, cada
-variável entra por `vercel env add <NOME> production`:
+`.gitignore` cobre `.env*`. Na hospedagem, cada variável entra pelo cofre de
+segredos do provedor:
 
 `DATABASE_URL`, `DATABASE_URL_LEITURA`, `GROQ_API_KEY`, `GROQ_MODEL`,
 `WEBHOOK_SECRET`, `CRON_SECRET`, `PAINEL_USUARIOS`, `WHATSAPP_BRIDGE_URL`,
 `PII_KEY`, `PII_INDEX_KEY`.
 
-`TEST_DATABASE_URL` e `TEST_DATABASE_URL_LEITURA` não vão para a Vercel: são só
+`TEST_DATABASE_URL` e `TEST_DATABASE_URL_LEITURA` ficam fora da hospedagem: são só
 de desenvolvimento, e apontam para o branch `testes` do Neon porque a suíte de
 integração apaga tabelas inteiras.
 
@@ -111,20 +111,17 @@ npm run cifrar-pii -- aplicar   # grava, numa transação só
 ## Cron
 
 A varredura de prazo (`/api/varredura`) precisa rodar **a cada minuto**: é ela
-que faz a oferta expirar e passar o lead pro próximo colocado. O plano Hobby da
-Vercel só permite cron uma vez por dia, então `vercel.ts` **não** declara
-`crons` — um cron diário não seria "menos frequente", seria o repasse
-automático desligado com aparência de ligado.
+que faz a oferta expirar e passar o lead pro próximo colocado. Um agendador que
+rode só uma vez por dia deixaria o repasse automático parado.
 
-Quem chama é um cron externo:
+Quem chama é um agendador externo, com o segredo no cabeçalho:
 
 ```
-* * * * * curl -s -X POST -H "x-webhook-secret: $WEBHOOK_SECRET"           https://costa-vale-imoveis.vercel.app/api/varredura
+* * * * * curl -s -X POST -H "x-webhook-secret: $WEBHOOK_SECRET" https://<endereço-do-painel>/api/varredura
 ```
 
-Virando Pro, acrescente `crons: [{ path: "/api/varredura", schedule: "* * * * *" }]`
-ao `vercel.ts` e desligue o externo. O `src/lib/segredo.ts` já aceita as duas
-formas de autenticação.
+O `src/lib/segredo.ts` também aceita `Authorization: Bearer $CRON_SECRET`, para
+agendadores que só mandam esse cabeçalho.
 
 ## O que um não autenticado alcança hoje
 
@@ -132,7 +129,7 @@ formas de autenticação.
 |---|---|
 | `/_next/static/*`, `/_next/image`, `/favicon.ico` | Público. São assets de build. |
 | `POST /api/eventos` | Sem login, por necessidade: canal e CRM não sabem fazer login. Protegido por `x-webhook-secret` ou `Authorization: Bearer $CRON_SECRET`, comparados em tempo constante. Sem nenhum segredo no ambiente → 401 em tudo. |
-| `GET`/`POST` `/api/varredura` | Idem. `GET` existe porque é assim que um cron costuma chamar; o `Bearer $CRON_SECRET` existe para o dia em que o Vercel Cron assumir, sem o segredo ir na URL. |
+| `GET`/`POST` `/api/varredura` | Idem. `GET` existe porque é assim que um cron costuma chamar; o `Bearer $CRON_SECRET` serve a agendadores que usam esse cabeçalho, sem o segredo ir na URL. |
 | Todo o resto | **401 Basic.** Sem `PAINEL_USUARIOS` → **503 em tudo.** |
 
 Com credencial de painel **não há papéis**: `/`, `/funil`, `/locacao`,

@@ -11,7 +11,7 @@ import { timingSafeEqual } from "node:crypto";
  * Duas formas de apresentar o segredo, porque são dois chamadores diferentes:
  *
  *   * `x-webhook-secret: <WEBHOOK_SECRET>` — o bridge do canal e o CRM.
- *   * `Authorization: Bearer <CRON_SECRET>` — o Vercel Cron, que só sabe mandar
+ *   * `Authorization: Bearer <CRON_SECRET>` — agendadores de cron que só sabem mandar
  *     `GET` com esse cabeçalho. Sem isso, o segredo teria que ir na URL, e URL
  *     de cron cai em log de acesso.
  */

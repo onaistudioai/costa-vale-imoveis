@@ -16,8 +16,8 @@ import * as schema from "./schema";
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: true },
-  // Na Vercel a instância é reaproveitada entre requisições (Fluid Compute),
-  // então o pool sobrevive — mas cada instância abre o seu. Poucas conexões
+  // Em hospedagem serverless a instância é reaproveitada entre requisições,
+  // então o pool sobrevive, mas cada instância abre o seu. Poucas conexões
   // por instância é o que impede estourar o limite do Neon em pico.
   max: 3,
   idleTimeoutMillis: 10_000,

@@ -21,5 +21,5 @@ export async function POST(req: Request) {
   return NextResponse.json(await varrerPrazos());
 }
 
-/** GET faz o mesmo: é assim que o Vercel Cron chama, e um `curl` também. */
+/** GET faz o mesmo: é assim que um agendador de cron costuma chamar. */
 export const GET = POST;
