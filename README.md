@@ -99,6 +99,7 @@ flowchart TB
 - **A única passagem direta é do Atendimento para o Roteador**, quando o lead fica qualificado. Uma escalação sai para a fila de decisões.
 - **Os outros se coordenam pelo banco.** O Curador cuida do estado operacional, o Guardião do comercial, o Alterador do cadastro, e o contrato impede que um escreva no campo do outro.
 - **Quando precisa de gente, o agente para.** O pedido vai para a fila, e a decisão volta para o mesmo agente, que continua de onde parou.
+- **Diagramas UML** (entidades, estados e sequência do lead) em [`docs/UML.md`](docs/UML.md).
 - **Regras próprias de cada um:** Curador decide o estado do imóvel no próprio arquivo; Guardião usa `publicacao.ts`; Roteador, `roteamento.ts`; Atendimento, `match.ts`; Alterador, `alteracao.ts`.
 
 ## Como o sistema trabalha
