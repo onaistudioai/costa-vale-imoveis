@@ -42,7 +42,7 @@ Nada a proteger, e vale registrar por quê:
 ## Segredos
 
 O `.env` nunca foi commitado (`git log --all -- .env` volta vazio) e o
-`.gitignore` cobre `.env*`, com exceção do `.env.example`. Na Vercel, cada
+`.gitignore` cobre `.env*`. Na Vercel, cada
 variável entra por `vercel env add <NOME> production`:
 
 `DATABASE_URL`, `DATABASE_URL_LEITURA`, `GROQ_API_KEY`, `GROQ_MODEL`,

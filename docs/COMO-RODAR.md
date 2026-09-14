@@ -2,7 +2,7 @@
 
 ```bash
 npm install
-cp .env.example .env      # preencha DATABASE_URL e GROQ_API_KEY
+# crie um .env com DATABASE_URL e GROQ_API_KEY
 
 # As duas chaves da PII. Diferentes entre si, 32 bytes cada. Guarde-as: sem a
 # PII_KEY os dados cifrados não voltam.
