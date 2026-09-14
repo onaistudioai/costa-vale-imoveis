@@ -41,6 +41,12 @@ header {
   border-bottom: 1px solid var(--borda);
 }
 
+header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
 .marca {
   font-weight: 620;
   letter-spacing: -0.01em;

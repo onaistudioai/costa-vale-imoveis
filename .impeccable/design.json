@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-13T23:30:00-03:00",
+  "title": "Design System: Costa & Vale Painel",
+  "extensions": {
+    "colorMeta": {
+      "papel-quente": { "role": "neutral", "displayName": "Papel Quente", "dark": "#16150f", "tonalRamp": ["#26241f", "#3d3a33", "#57534a", "#78736a", "#9d978d", "#c4bfb5", "#e4e0d8", "#fbfaf8"] },
+      "folha": { "role": "neutral", "displayName": "Folha", "dark": "#1e1c17", "tonalRamp": ["#262626", "#3b3b3b", "#555555", "#777777", "#9c9c9c", "#c2c2c2", "#e6e6e6", "#ffffff"] },
+      "linha-de-pauta": { "role": "neutral", "displayName": "Linha de Pauta", "dark": "#33302a", "tonalRamp": ["#2a2722", "#403c35", "#58544b", "#767166", "#979185", "#b9b3a7", "#d6d1c7", "#efece6"] },
+      "tinta": { "role": "primary", "displayName": "Tinta", "dark": "#f2efe8", "tonalRamp": ["#1c1a17", "#34312c", "#4e4a43", "#6b665d", "#8c867c", "#aea99f", "#d1cdc5", "#f2efe8"] },
+      "tinta-gasta": { "role": "neutral", "displayName": "Tinta Gasta", "dark": "#a49d92", "tonalRamp": ["#221f1b", "#39352f", "#534e46", "#6d675e", "#8e887e", "#aea89e", "#cfcac2", "#eeebe6"] },
+      "lacre": { "role": "secondary", "displayName": "Lacre", "dark": "#e5866f", "tonalRamp": ["#3b120a", "#5e1d10", "#842817", "#a8321e", "#c95a43", "#e5866f", "#f2b6a7", "#fbe3dc"] },
+      "ocre": { "role": "secondary", "displayName": "Ocre", "dark": "#d9ae5c", "tonalRamp": ["#352507", "#553b0b", "#77530f", "#9a6b12", "#bb8a31", "#d9ae5c", "#ecd09b", "#f9eed8"] },
+      "musgo": { "role": "secondary", "displayName": "Musgo", "dark": "#7fc79b", "tonalRamp": ["#0f2416", "#1a3d26", "#255536", "#2f6b45", "#4f9468", "#7fc79b", "#b3e0c3", "#e3f4e9"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Título de cada tela, um por página." },
+      "title": { "displayName": "Title", "purpose": "Seções e tipo de cada ficha." },
+      "body": { "displayName": "Body", "purpose": "Texto corrido e descrição das fichas." },
+      "label": { "displayName": "Label", "purpose": "Metadados, datas, autor, pílulas e rótulos de faixa." }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Botão",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Ação secundária: negar, adiar, abrir detalhe.",
+      "html": "<button class=\"ds-btn\">Negar</button>",
+      "css": ".ds-btn { font: 15px/1.55 ui-sans-serif, system-ui, sans-serif; padding: 0.4rem 0.9rem; border-radius: 7px; border: 1px solid #e4e0d8; background: #ffffff; color: #1c1a17; cursor: pointer; } .ds-btn:hover { border-color: #6d675e; } .ds-btn:focus-visible { outline: 2px solid #1c1a17; outline-offset: 2px; }"
+    },
+    {
+      "name": "Botão Primário",
+      "kind": "button",
+      "refersTo": "button-primario",
+      "description": "A ação que resolve o pedido. Um por grupo.",
+      "html": "<button class=\"ds-btn-primario\">Aprovar</button>",
+      "css": ".ds-btn-primario { font: 15px/1.55 ui-sans-serif, system-ui, sans-serif; padding: 0.4rem 0.9rem; border-radius: 7px; border: 1px solid #1c1a17; background: #1c1a17; color: #fbfaf8; cursor: pointer; } .ds-btn-primario:hover { background: #34312c; } .ds-btn-primario:focus-visible { outline: 2px solid #1c1a17; outline-offset: 2px; }"
+    },
+    {
+      "name": "Campo de Texto",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Motivo da decisão, pedido de alteração, pergunta.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Motivo (opcional)\">",
+      "css": ".ds-input { font: 15px/1.55 ui-sans-serif, system-ui, sans-serif; padding: 0.4rem 0.6rem; border: 1px solid #e4e0d8; border-radius: 7px; background: #fbfaf8; color: #1c1a17; min-width: 8rem; } .ds-input:focus-visible { outline: 2px solid #1c1a17; outline-offset: 1px; }"
+    },
+    {
+      "name": "Navegação",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Cabeçalho com marca e links das telas.",
+      "html": "<header class=\"ds-nav\"><a class=\"ds-marca\" href=\"#\">Costa &amp; Vale</a><nav><a href=\"#\">Fila</a><a href=\"#\">Atendimentos</a><a href=\"#\">Semanas</a></nav></header>",
+      "css": ".ds-nav { display: flex; align-items: baseline; gap: 1.5rem; padding: 1rem 1.5rem; border-bottom: 1px solid #e4e0d8; font: 15px/1.55 ui-sans-serif, system-ui, sans-serif; color: #1c1a17; background: #fbfaf8; } .ds-nav nav { display: flex; gap: 1rem; } .ds-nav a { color: inherit; text-decoration: none; } .ds-nav a:hover { text-decoration: underline; } .ds-marca { font-weight: 620; letter-spacing: -0.01em; }"
+    },
+    {
+      "name": "Pílula",
+      "kind": "chip",
+      "refersTo": "pill",
+      "description": "Estado curto; variantes alerta e ok.",
+      "html": "<span class=\"ds-pill\">pendente</span> <span class=\"ds-pill ds-alerta\">atrasado</span> <span class=\"ds-pill ds-ok\">em dia</span>",
+      "css": ".ds-pill { font: 0.85rem ui-sans-serif, system-ui, sans-serif; border: 1px solid #e4e0d8; border-radius: 999px; padding: 0.2rem 0.7rem; background: #ffffff; color: #1c1a17; } .ds-alerta { border-color: #a8321e; color: #a8321e; } .ds-ok { border-color: #2f6b45; color: #2f6b45; }"
+    },
+    {
+      "name": "Ficha da Fila",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Pedido de decisão com faixa lateral, custo e ações.",
+      "html": "<article class=\"ds-card ds-vermelha\"><p class=\"ds-tag\">Faixa vermelha</p><div class=\"ds-topo\"><span class=\"ds-tipo\">Derrubar mídia paga</span><span class=\"ds-custo\">R$ 38/dia</span></div><p class=\"ds-corpo\">Imóvel 47 saiu do mercado e a campanha continua ativa.</p><div class=\"ds-acoes\"><button class=\"ds-p\">Aprovar</button><button class=\"ds-s\">Negar</button></div></article>",
+      "css": ".ds-card { font: 15px/1.55 ui-sans-serif, system-ui, sans-serif; color: #1c1a17; background: #ffffff; border: 1px solid #e4e0d8; border-radius: 10px; padding: 1.1rem 1.25rem; max-width: 36rem; } .ds-vermelha { border-left: 3px solid #a8321e; } .ds-tag { font-size: 0.8rem; margin: 0 0 0.6rem; color: #a8321e; } .ds-topo { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.4rem; } .ds-tipo { font-weight: 600; } .ds-custo { color: #a8321e; font-weight: 600; font-variant-numeric: tabular-nums; } .ds-corpo { color: #6d675e; margin: 0.35rem 0 0.9rem; } .ds-acoes { display: flex; gap: 0.5rem; } .ds-acoes button { font: inherit; padding: 0.4rem 0.9rem; border-radius: 7px; cursor: pointer; } .ds-p { background: #1c1a17; color: #fbfaf8; border: 1px solid #1c1a17; } .ds-s { background: #ffffff; color: #1c1a17; border: 1px solid #e4e0d8; } .ds-s:hover { border-color: #6d675e; }"
+    },
+    {
+      "name": "Linha do Tempo",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Histórico do imóvel: quando, o que, quem.",
+      "html": "<ul class=\"ds-tempo\"><li><span class=\"ds-quando\">12/09 14:02</span><span>Preço alterado para R$ 820.000</span><span class=\"ds-quem\">ana</span></li><li><span class=\"ds-quando\">11/09 09:40</span><span>Laudo lido: pendência aberta</span><span class=\"ds-quem\">curador</span></li></ul>",
+      "css": ".ds-tempo { list-style: none; padding: 0; margin: 0; font: 15px/1.55 ui-sans-serif, system-ui, sans-serif; color: #1c1a17; } .ds-tempo li { display: flex; gap: 1rem; padding: 0.55rem 0; border-bottom: 1px solid #e4e0d8; } .ds-quando { color: #6d675e; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 0.85rem; min-width: 9.5rem; } .ds-quem { color: #6d675e; font-size: 0.85rem; white-space: nowrap; }"
+    },
+    {
+      "name": "Esteira",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Passos da escritura: feitos, atual e futuros.",
+      "html": "<ol class=\"ds-esteira\"><li class=\"ds-feito\">ITBI</li><li class=\"ds-feito\">Certidões</li><li class=\"ds-atual\">Lavratura</li><li>Registro</li><li>Matrícula</li></ol>",
+      "css": ".ds-esteira { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-esteira li { font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid #e4e0d8; border-radius: 999px; color: #6d675e; } .ds-feito { border-color: #2f6b45 !important; color: #2f6b45 !important; } .ds-atual { border-color: #1c1a17 !important; color: #1c1a17 !important; font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "O Livro de Registro",
+    "overview": "O painel funciona como o livro de um cartório: papel claro e quente, tinta quase preta, e cada decisão anotada com data e autor. A página existe para que alguém decida com segurança, então a superfície fica calma e a tinta carrega a informação.\n\nA densidade é de documento de trabalho. Uma coluna central de leitura, fichas empilhadas, linhas de pauta separando registros. A cor aparece como um carimbo: só quando algo pede ação ou confirma que foi feito. Não há sombras, gradientes nem ornamentos; a hierarquia vem do peso da tinta e da posição na página.\n\nTema escuro acompanha a preferência do sistema, invertendo papel e tinta e clareando os carimbos para manter o contraste.",
+    "keyCharacteristics": [
+      "Papel quente e tinta escura como base de tudo.",
+      "Cor reservada para estado: lacre, ocre e musgo.",
+      "Plano, com profundidade dada por borda fina e tom.",
+      "Uma coluna de leitura de até 62rem.",
+      "Números tabulares em datas, prazos e valores."
+    ],
+    "rules": [
+      { "name": "The Carimbo Rule", "body": "Lacre, ocre e musgo só aparecem para comunicar estado. Nunca como decoração, fundo de área ou destaque de marca.", "section": "colors" },
+      { "name": "The Rótulo Junto Rule", "body": "Cor de estado sempre vem acompanhada de texto que diz o estado. A barra lateral ordena num relance; o rótulo carrega o significado.", "section": "colors" },
+      { "name": "The Número Alinhado Rule", "body": "Datas, prazos, custos e contagens usam font-variant-numeric: tabular-nums para as colunas lerem como livro-caixa.", "section": "typography" },
+      { "name": "The Página Plana Rule", "body": "Nada flutua. Estado se mostra com borda e tinta, nunca com sombra ou elevação.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do manter o fundo em Papel Quente (#fbfaf8) e o texto em Tinta (#1c1a17).",
+      "Do usar a barra lateral de 3px para faixa e urgência, sempre com rótulo em texto.",
+      "Do usar números tabulares em datas, prazos e valores.",
+      "Do registrar quem e quando em Tinta Gasta, 0.85rem, ao lado de cada ação.",
+      "Do manter um único botão primário por grupo de ações."
+    ],
+    "donts": [
+      "Don't adicionar sombras, gradientes ou fundos coloridos em áreas.",
+      "Don't usar Lacre, Ocre ou Musgo fora de estado.",
+      "Don't introduzir uma segunda família tipográfica no painel.",
+      "Don't passar a largura de leitura de 62rem para texto e fichas."
+    ]
+  }
+}

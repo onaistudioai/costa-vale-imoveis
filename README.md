@@ -21,6 +21,34 @@ terça, o cliente que fez proposta e sumiu sem ninguém registrar por quê.
 
 Todos esses problemas são de **coordenação**, e é isso que o sistema faz.
 
+![Fila de decisões do painel](docs/imagens/fila.png)
+
+## O caminho de um pedido
+
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#fbfaf8", "primaryColor": "#ffffff", "primaryBorderColor": "#e4e0d8", "primaryTextColor": "#1c1a17", "lineColor": "#6d675e", "fontFamily": "system-ui, sans-serif"}}}%%
+flowchart LR
+  entrada["Texto de gente<br/>laudo, mensagem, documento"] --> modelo["Modelo lê<br/>e extrai campos"]
+  modelo --> regra["Regra em código<br/>decide e dá a faixa"]
+  regra -->|verde| fila["Fila de decisões"]
+  regra -->|amarela| mesa["Mesa de revisão<br/>dois pareceres"]
+  regra -->|vermelha| fila
+  mesa --> fila
+  fila --> pessoa{"Pessoa aprova<br/>ou nega"}
+  pessoa -->|aprova| acao["Ação executada<br/>e registrada"]
+  pessoa -->|nega| registro["Motivo registrado"]
+  pessoa -.->|decisão vira memória| mesa
+  registro -.->|vira caso de referência| modelo
+
+  classDef vermelha stroke:#a8321e,stroke-width:3px
+  classDef amarela stroke:#9a6b12,stroke-width:3px
+  classDef ok stroke:#2f6b45,stroke-width:3px
+  classDef tinta fill:#1c1a17,color:#fbfaf8,stroke:#1c1a17
+  class mesa amarela
+  class pessoa tinta
+  class acao ok
+```
+
 ## Os seis agentes
 
 | # | Agente | O que faz | Chama modelo? |
@@ -111,6 +139,14 @@ suíte. O que rodou sem aprovação aparece em `/automatico`.
 | `/semanas` | As últimas 12 semanas: leads, decisões, expirados, tempo até decidir, falhas do modelo |
 | `/cerebro` | O que a equipe entendeu com a operação, editável e sem acesso ao cadastro |
 | `/imovel/[id]` | "Por que esse anúncio caiu?": o histórico completo |
+
+**Atendimentos** ordenados pelo que precisa de alguém primeiro:
+
+![Tela de atendimentos](docs/imagens/funil.png)
+
+**Escrituras** separando o que é da imobiliária do que depende de cartório:
+
+![Tela de escrituras](docs/imagens/escrituras.png)
 
 ## Segurança
 
