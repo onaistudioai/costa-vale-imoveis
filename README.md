@@ -13,7 +13,7 @@ errada.
 > imobiliária de Sorocaba. Não está em produção: a implantação em servidor está
 > descrita no plano e ainda não foi executada.
 
-## Por que existe
+## O problema
 
 Uma imobiliária pequena perde dinheiro em lugares que ninguém vê: o imóvel que
 ficou pronto e nunca foi anunciado, a campanha paga que continua rodando num
@@ -87,53 +87,21 @@ sabe de quem é a responsabilidade. Só o que é nosso vira trabalho; o que
 depende de cartório ou prefeitura vira acompanhamento. Cobrar prazo de quem não
 obedece prazo interno ensina a equipe a ignorar o alerta inteiro.
 
-## Como rodar
+**Risco é faixa, e nenhuma faixa pula aprovação.** Cada pedido sai verde,
+amarelo ou vermelho. A faixa ordena a fila e escolhe o canal de aviso, mas o
+verde também espera alguém. O amarelo passa antes por uma mesa de revisão: dois
+papéis em tensão (CrewAI, num serviço Python à parte) leem o caso, e se
+divergirem quem decide é uma regra de código, que sobe o caso pra gente. A mesa
+não tem acesso ao banco.
 
-```bash
-npm install
-cp .env.example .env      # preencha DATABASE_URL e GROQ_API_KEY
+**A mesa lembra o que a pessoa decidiu.** Aprovação ou recusa no painel vai para
+a memória da mesa com o motivo, marcada `[gente]` e com peso maior que o palpite
+da própria mesa. No próximo caso parecido, a decisão humana volta no contexto.
 
-# As duas chaves da PII. Diferentes entre si, 32 bytes cada. Guarde-as: sem a
-# PII_KEY os dados cifrados não voltam.
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"  # PII_KEY
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"  # PII_INDEX_KEY
-
-npm run db:migrate        # aplica as migrations, RLS incluso
-npm run acesso -- seunome # gera a senha do painel e a linha do PAINEL_USUARIOS
-npm run seed              # estoque de demonstração de Sorocaba
-npm run dev               # http://localhost:3000
-```
-
-Os testes de integração usam um **banco separado** (`TEST_DATABASE_URL`, um
-branch do Neon). Sem essa variável eles se marcam como pulados — a suíte apaga
-tabelas a cada teste, e apontá-la para o banco de trabalho apaga o estoque.
-
-A suíte roda **sem chave de API e sem banco** — os testes de unidade injetam um
-extrator falso, e os de integração se marcam como `skipped` quando não há
-`DATABASE_URL`.
-
-```bash
-npm test          # 215 testes
-npm run typecheck
-```
-
-Scripts de demonstração:
-
-```bash
-npm run varredura   # o que o tempo passou: prazos, aluguéis, cartórios
-npm run recepcao    # a mesma pessoa chegando por dois canais diferentes
-npm run perguntar -- "quanto estou gastando em mídia paga agora?"
-npm run procedencia  # qual modelo e qual versão de prompt produziram cada leitura
-npm run aferir       # o conjunto de referência contra o modelo real
-npm run simular      # o custo do lead sem dono, com a rotina real do corretor
-```
-
-Num banco que já tem dados de antes da criptografia, uma vez só:
-
-```bash
-npm run cifrar-pii              # modo seco: diz o que faria
-npm run cifrar-pii -- aplicar   # grava, numa transação só
-```
+**Toda escrita declara quanta autonomia tem.** `src/regras/modo.ts` diz, campo
+por campo, se o sistema para e espera (hitl), age e alguém confere (hotl) ou
+age sem revisão (hootl), com o porquê. Campo novo sem declaração quebra a
+suíte. O que rodou sem aprovação aparece em `/automatico`.
 
 ## As telas
 
@@ -146,183 +114,39 @@ npm run cifrar-pii -- aplicar   # grava, numa transação só
 | `/alterar` | Pedido de alteração de cadastro em texto livre |
 | `/consulta` | Perguntas da equipe sobre os relatórios |
 | `/mensagens` | Tudo que o sistema falou — ou teria falado, com o canal desligado |
+| `/automatico` | O que o sistema fez sem ninguém aprovar |
+| `/semanas` | As últimas 12 semanas: leads, decisões, expirados, tempo até decidir, falhas do modelo |
 | `/cerebro` | O que a equipe entendeu com a operação — editável, e sem poder mexer em cadastro |
 | `/imovel/[id]` | "Por que esse anúncio caiu?" — o histórico completo |
 
-O painel inteiro exige senha (`proxy.ts`), e **quem decidiu é quem entrou** — o
-campo de auditoria deixou de ser um texto que a pessoa preenche com o nome que
-quiser. As rotas de máquina (`/api/eventos`, `/api/varredura`) ficam de fora da
-senha porque têm o próprio segredo: cron não faz login.
+
+## Segurança
+
+- **Painel com senha**, guardada só como hash com sal por pessoa. Sem usuários
+  configurados, o painel recusa tudo em vez de abrir.
+- **Quem decidiu é quem entrou.** A trilha de auditoria assina com a sessão,
+  nunca com um nome digitado no formulário.
+- **Dados pessoais cifrados** (CPF, telefone, e-mail, identificadores de canal).
+  Um dump do banco sozinho não revela ninguém.
+- **Row Level Security** em todas as tabelas, e o agente que responde perguntas
+  usa uma conexão só de leitura, sem acesso à trilha de auditoria.
+- **Conexão com o banco autenticada** e cifrada.
+- **Rotas de integração protegidas por segredo**, comparado em tempo constante.
+- **Nenhum segredo no navegador**: sem cookies, sem tokens no `localStorage`,
+  sem variável pública, com teste impedindo a regressão.
+- **Avisos com lista de permissão**: nada da fala, nome ou telefone do cliente
+  sai do painel por WhatsApp ou e-mail.
+
+Os detalhes técnicos estão em [`docs/SEGURANCA.md`](docs/SEGURANCA.md).
 
 ## Stack
 
 LangGraph.js · LangChain · Groq · Next.js (App Router) · Drizzle ORM ·
-PostgreSQL · Vitest · TypeScript
+PostgreSQL · Vitest · TypeScript · Zod
 
-## Estrutura
+Mesa de revisão: Python · FastAPI · CrewAI · Pydantic · LanceDB · pytest. O
+contrato entre Zod e Pydantic é conferido por teste nos dois lados.
 
-```
-app/          telas e rotas de API
-src/regras/   regras puras — sem banco, sem modelo, 100% testáveis
-src/agentes/  os seis agentes
-src/grafo/    o grafo, o despachante e o contrato de coordenação
-src/lib/      banco, varredura, recepção, consultas do painel
-docs/         especificação, plano executivo, implantação e calibração
-drizzle/      migrations
-```
-
-A separação que sustenta o resto: **`src/regras/` não importa banco nem modelo.**
-É o que permite testar a decisão de negócio isolada da infraestrutura.
-
-## Levar para o sistema de uma empresa
-
-`docs/IMPLANTACAO.md` descreve o processo completo: levantamento dos números
-que precisam mudar, encaixe no que a empresa já usa, carga de dados, duas
-semanas em sombra (o sistema decide e não executa), virada de um agente por
-vez — o que fala com cliente é sempre o último — e a supervisão em regime.
-
-## Segurança
-
-O que está de pé, e por quê.
-
-### Autenticação
-
-O painel inteiro fica atrás de HTTP Basic, conferido no `proxy.ts` (no Next 16
-o antigo `middleware` chama-se `proxy`, e roda no runtime Node). Basic auth é
-escolha, não preguiça: o painel tem um punhado de usuários dentro da
-imobiliária, e tela de login + tabela de sessão + recuperação de senha é mais
-código pra manter do que o problema pede.
-
-As senhas nunca ficam em texto puro. `PAINEL_USUARIOS` guarda `nome:sal:hash`,
-com `scrypt` e sal por pessoa; gere com `npm run acesso -- <nome>`. Sem a
-variável, o painel responde **503 em tudo** — abrir por falta de configuração
-seria pior que não ter porta, porque pareceria protegido.
-
-Quem entrou é carimbado em `x-usuario` pelo `proxy.ts`, que **apaga** qualquer
-`x-usuario` vindo de fora antes de escrever o seu. As oito server actions em
-`app/actions.ts` chamam `exigirUsuario()`: o campo "decidido por" da trilha de
-auditoria sai da sessão e não do formulário. Antes dava pra assinar uma decisão
-com o nome de outra pessoa mandando o POST à mão.
-
-O que o Basic auth **não** dá, e fica como dívida conhecida: não há logout, não
-há expiração de sessão, e a credencial vai em toda requisição. A defesa de CSRF
-em jogo é a checagem de Origin embutida nas server actions do Next.
-
-### Cookies, localStorage e sessionStorage
-
-Nada a proteger, e vale registrar por quê:
-
-- **Nenhum cookie** é definido ou lido no projeto. Basic auth guarda a
-  credencial no cofre do navegador; não existe cookie de sessão para marcar
-  `HttpOnly` / `Secure` / `SameSite`.
-- **Nenhum token no `localStorage`.** Não há uma linha de `localStorage` no
-  repositório — todas as páginas são server components.
-- **`sessionStorage` já é limpo pelo navegador ao fechar a aba**, por definição
-  da API. Também não há uso nenhum aqui.
-- **Nenhuma variável `NEXT_PUBLIC_*`**, e portanto nenhum segredo no bundle. O
-  teste `src/lib/ambiente.test.ts` é o guarda que impede a regressão.
-
-### Segredos
-
-O `.env` nunca foi commitado (`git log --all -- .env` volta vazio) e o
-`.gitignore` cobre `.env*`, com exceção do `.env.example`. Na Vercel, cada
-variável entra por `vercel env add <NOME> production`:
-
-`DATABASE_URL`, `DATABASE_URL_LEITURA`, `GROQ_API_KEY`, `GROQ_MODEL`,
-`WEBHOOK_SECRET`, `CRON_SECRET`, `PAINEL_USUARIOS`, `WHATSAPP_BRIDGE_URL`,
-`PII_KEY`, `PII_INDEX_KEY`.
-
-`TEST_DATABASE_URL` e `TEST_DATABASE_URL_LEITURA` não vão para a Vercel: são só
-de desenvolvimento, e apontam para o branch `testes` do Neon porque a suíte de
-integração apaga tabelas inteiras.
-
-### Banco
-
-As duas conexões usam `ssl: { rejectUnauthorized: true }`, e as URLs pedem
-`sslmode=verify-full`. Cifrar sem autenticar o servidor protege do bisbilhoteiro
-passivo e de mais ninguém.
-
-A conexão só-leitura (`DATABASE_URL_LEITURA`, usada só pelo Agente 5) agora é
-obrigatória: sem ela a aplicação **não sobe**. Antes ela caía na conexão com
-poder de escrita deixando um aviso no log, que é a forma de uma garantia sumir
-sem ninguém notar.
-
-A migração `0011_rls.sql` liga Row Level Security com `FORCE` em todas as
-tabelas. `FORCE` não é detalhe: sem ele o dono da tabela ignora as políticas, e
-como a aplicação roda com o dono, o RLS seria enfeite. O papel `painel` (dado a
-quem roda a migração) tem política `FOR ALL USING (true)`; a leitura tem
-política `FOR SELECT` em tudo **menos** `aprovacao`, `log_evento`,
-`leitura_modelo` e `mensagem_enviada` — o Agente 5 responde pergunta com texto
-vindo de fora, é o mais exposto a injeção, e é o que menos precisa da trilha de
-auditoria. No RLS, ausência de política é zero linhas, não erro.
-
-Alcance honesto: sem dono por linha, o RLS aqui é *deny-by-default* entre
-papéis, não isolamento entre usuários do painel. Ele protege contra uma
-conexão com poder menor; não impede um usuário do painel de ver o cliente de
-outro corretor. Isolamento por corretor exigiria dono por linha e `SET LOCAL` a
-cada requisição, e não é o que este sistema faz.
-
-### Criptografia da PII
-
-`cliente.cpf_cnpj`, `cliente.telefone`, `cliente.email`, `corretor.telefone` e
-`identidade.identificador` ficam cifrados com AES-256-GCM (`src/lib/cripto.ts`),
-com IV novo a cada gravação — o mesmo telefone gera cifras diferentes, então a
-coluna não denuncia quem repete. A chave (`PII_KEY`) nunca passa pela conexão:
-quem tiver um dump do banco não tem os dados. A trilha de auditoria guarda o
-"de → para" desses campos igualmente cifrado, senão o `log_evento` devolveria
-justamente o que a coluna esconde.
-
-Busca exata sobre cifra não funciona, então há dois **índices cegos** (HMAC com
-uma chave separada, `PII_INDEX_KEY`): `cliente.email_indice` e
-`identidade.identificador_indice`. É o segundo que carrega a unicidade por
-canal.
-
-A busca difusa que liga `ju.mendes.sp` a `jumendes` perdeu o `ILIKE` sobre o
-identificador — ciphertext não casa com `%jumendes%`. Ela virou varredura
-decifrada em memória, com teto, em `src/lib/identidade-db.ts`. O `ILIKE` sobre
-o apelido continua no banco: apelido é nome de exibição, não identificador.
-
-Para migrar dados já existentes, uma vez, depois de `npm run db:migrate`:
-
-```
-npm run cifrar-pii              # mostra o que faria
-npm run cifrar-pii -- aplicar   # grava, numa transação só
-```
-
-**Perder a `PII_KEY` é perder os dados.** É esse o ponto.
-
-### Cron
-
-A varredura de prazo (`/api/varredura`) precisa rodar **a cada minuto**: é ela
-que faz a oferta expirar e passar o lead pro próximo colocado. O plano Hobby da
-Vercel só permite cron uma vez por dia, então `vercel.ts` **não** declara
-`crons` — um cron diário não seria "menos frequente", seria o repasse
-automático desligado com aparência de ligado.
-
-Quem chama é um cron externo:
-
-```
-* * * * * curl -s -X POST -H "x-webhook-secret: $WEBHOOK_SECRET"           https://costa-vale-imoveis.vercel.app/api/varredura
-```
-
-Virando Pro, acrescente `crons: [{ path: "/api/varredura", schedule: "* * * * *" }]`
-ao `vercel.ts` e desligue o externo. O `src/lib/segredo.ts` já aceita as duas
-formas de autenticação.
-
-### O que um não autenticado alcança hoje
-
-| Alcance | Estado |
-|---|---|
-| `/_next/static/*`, `/_next/image`, `/favicon.ico` | Público. São assets de build. |
-| `POST /api/eventos` | Sem login, por necessidade: canal e CRM não sabem fazer login. Protegido por `x-webhook-secret` ou `Authorization: Bearer $CRON_SECRET`, comparados em tempo constante. Sem nenhum segredo no ambiente → 401 em tudo. |
-| `GET`/`POST` `/api/varredura` | Idem. `GET` existe porque é assim que um cron costuma chamar; o `Bearer $CRON_SECRET` existe para o dia em que o Vercel Cron assumir, sem o segredo ir na URL. |
-| Todo o resto | **401 Basic.** Sem `PAINEL_USUARIOS` → **503 em tudo.** |
-
-Com credencial de painel **não há papéis**: `/`, `/funil`, `/locacao`,
-`/escrituras`, `/alterar`, `/consulta`, `/mensagens`, `/cerebro` e
-`/imovel/[id]` são iguais para todo mundo, e qualquer usuário aprova, funde
-cadastro e fecha atendimento. É decisão consciente para uma equipe pequena, não
-esquecimento — o que a auditoria garante é *quem* fez, não *se podia*.
 
 ## Limites conhecidos
 
@@ -334,7 +158,10 @@ está documentado, não escondido:
 - **O sistema não aprende sozinho, e isso é escolha.** Ele registra qual modelo
   e qual versão de prompt produziram cada leitura (`leitura_modelo`), afere a
   leitura contra um conjunto de referência (`npm run aferir`) e guarda o que a
-  equipe entendeu num cérebro editável (`/cerebro`) — mas nenhuma nota vira
-  ajuste sem uma pessoa confirmar. O plano está em `docs/PLANO_CEREBRO.md`.
+  equipe entendeu num cérebro editável (`/cerebro`). Leitura negada no painel
+  vira candidata a caso de referência (`npm run propor-casos`) — mas nenhuma
+  nota nem caso vira ajuste sem uma pessoa confirmar.
+- O Groq gratuito tem limite de tokens por minuto. Rodar muitas leituras seguidas
+  (o `aferir`, por exemplo) pode estourar, e o grafo não tenta de novo. O plano está em `docs/PLANO_CEREBRO.md`.
 - Os números de calibração (`docs/calibracao.json`) são chutes iniciais que
   precisam de operação real para afinar.

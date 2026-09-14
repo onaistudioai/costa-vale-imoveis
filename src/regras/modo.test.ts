@@ -18,7 +18,8 @@ function camposEscritosNoCodigo(): string[] {
     for (const nome of readdirSync(dir)) {
       const caminho = join(dir, nome);
       if (statSync(caminho).isDirectory()) {
-        if (nome === "node_modules" || nome === ".next") continue;
+        // afericao/ é gabarito do que o modelo deveria ler, não escrita no log.
+        if (nome === "node_modules" || nome === ".next" || nome === "afericao") continue;
         varrer(caminho);
         continue;
       }
