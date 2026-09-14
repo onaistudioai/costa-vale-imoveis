@@ -1,0 +1,17 @@
+@startuml sequencia-alterador
+title Alterador: texto livre até cadastro
+actor Equipe
+participant "6 Alterador" as Al
+participant Modelo as M
+participant Gate as G
+database Banco as DB
+
+Equipe -> Al : "muda o preço do apartamento do Campolim"
+Al -> M : extrai entidade, alvo, campo, valor
+Al -> DB : procura candidatos
+Al -> DB : aprovacao aplicar_alteracao (de → para)
+Al -> G : pausa
+Equipe -> G : confirma o registro certo
+G -> Al : decisão
+Al -> DB : escrita assinada por quem confirmou, log_evento
+@enduml

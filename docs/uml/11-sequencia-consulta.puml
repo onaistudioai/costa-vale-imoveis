@@ -1,0 +1,15 @@
+@startuml sequencia-consulta
+title Consulta: pergunta da equipe
+actor Equipe
+participant "5 Consulta" as Co
+participant Modelo as M
+database "Banco (só leitura)" as DB
+
+Equipe -> Co : pergunta
+Co -> M : qual dos 6 relatórios
+M --> Co : Intencao
+Co -> DB : consulta determinística
+DB --> Co : linhas
+Co -> M : redige sobre as linhas
+Co --> Equipe : resposta com números do banco
+@enduml

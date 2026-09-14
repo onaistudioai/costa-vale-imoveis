@@ -1,0 +1,42 @@
+@startuml estados-atendimento-locacao-cerebro
+title Estados do atendimento, da locação e do cérebro
+state "Atendimento · etapa" as et {
+  [*] --> primeiro_contato
+  primeiro_contato --> qualificado
+  qualificado --> visita_agendada
+  visita_agendada --> visita_feita
+  visita_feita --> proposta
+  proposta --> negociacao
+  negociacao --> ganho
+  qualificado --> perdido
+  negociacao --> perdido
+}
+state "Atendimento · estado" as es {
+  [*] --> aberto
+  aberto --> pendente : respondemos
+  pendente --> aberto : cliente falou
+  pendente --> fechado : pessoa dá desfecho
+  aberto --> fechado : pessoa dá desfecho
+}
+state "Contrato de locação" as ct {
+  [*] --> ativo
+  ativo --> em_rescisao
+  em_rescisao --> encerrado
+  ativo --> encerrado
+}
+state "Parcela de aluguel" as pa {
+  [*] --> aberta
+  aberta --> paga
+  aberta --> atrasada
+  atrasada --> paga
+  paga --> repassada
+  aberta --> cancelada
+}
+state "Nota do cérebro" as no {
+  [*] --> rascunho
+  rascunho --> confirmada
+  confirmada --> fixada
+  confirmada --> desativada
+  fixada --> desativada
+}
+@enduml

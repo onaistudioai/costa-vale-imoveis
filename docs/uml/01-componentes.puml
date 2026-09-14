@@ -1,0 +1,44 @@
+@startuml componentes
+title Componentes
+left to right direction
+actor Equipe
+actor Corretor
+actor Cliente
+node "Canais\nWhatsApp, Instagram, site, e-mail" as canais
+package "Next.js (App Router)" {
+  component "Painel" as painel
+  component "Recepção\nrotas com segredo" as recepcao
+  component "Varredura\nprazos, parcelas, silêncio" as varredura
+}
+package "LangGraph" {
+  component "Despachante" as despachante
+  component "Curador · Guardião · Roteador\nAtendimento · Alterador" as agentes
+  component "Gate\ninterrupt()" as gate
+}
+component "Consulta\nsó leitura" as consulta
+component "Porta do modelo\nGroq" as modelo
+component "Mesa de revisão\nFastAPI + CrewAI + LanceDB\nsem acesso ao banco" as mesa
+database "Postgres\nschema public, RLS" as db
+database "schema cerebro" as cerebro
+component "Mensagens enviadas\nWhatsApp / e-mail" as saida
+
+Equipe --> painel
+Corretor --> painel
+Cliente --> canais
+canais --> recepcao
+recepcao --> despachante
+varredura --> despachante
+despachante --> agentes
+agentes <--> gate
+painel --> gate : decisão retoma thread
+painel --> consulta
+agentes --> modelo
+consulta --> modelo
+agentes --> mesa : faixa amarela
+agentes --> db
+consulta --> db : papel consulta
+painel --> db
+painel --> cerebro
+agentes ..> cerebro : lê notas
+agentes --> saida
+@enduml

@@ -1,0 +1,58 @@
+@startuml agentes
+title Agentes
+interface AgenteContexto <<contrato>> {
+  escrever(campo do próprio agente)
+  pedirAprovacao(pedido)
+}
+class Curador {
+  1 · dono de estado_operacional e preço
+  extrai ExtracaoLaudo
+}
+class Guardiao {
+  2 · dono de estado_comercial
+  extrai ExtracaoNegociacao
+  derruba mídia paga
+}
+class Roteador {
+  3 · sem modelo
+  rotear(): oferta com prazo
+}
+class Atendimento {
+  4 · conversa e qualifica
+  usa match.ts
+}
+class Consulta {
+  5 · só leitura
+  6 relatórios
+}
+class Alterador {
+  6 · não é dono de campo
+  mostra de → para
+}
+class Mesa <<serviço Python>> {
+  dois pareceres
+  Consolidado
+}
+class Faixa <<regra>> {
+  verde · amarela · vermelha
+}
+class Extrator <<porta do modelo>> {
+  grava leitura_modelo
+}
+AgenteContexto <|.. Curador
+AgenteContexto <|.. Guardiao
+AgenteContexto <|.. Roteador
+AgenteContexto <|.. Atendimento
+AgenteContexto <|.. Alterador
+Curador ..> Extrator
+Guardiao ..> Extrator
+Atendimento ..> Extrator
+Alterador ..> Extrator
+Consulta ..> Extrator
+Curador ..> Faixa
+Guardiao ..> Faixa
+Alterador ..> Faixa
+Curador ..> Mesa : faixa amarela
+Guardiao ..> Mesa : faixa amarela
+Atendimento --> Roteador : lead qualificado
+@enduml

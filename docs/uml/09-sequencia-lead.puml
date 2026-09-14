@@ -1,0 +1,36 @@
+@startuml sequencia-lead
+title Atendimento e Roteador: lead até corretor
+actor Cliente
+participant Despachante as D
+participant "4 Atendimento" as A
+participant "Modelo (Groq)" as M
+participant "3 Roteador" as R
+participant "Gate (interrupt)" as G
+database Banco as DB
+actor Corretor
+
+Cliente -> D : mensagem
+D -> A : evento do cliente (um trabalho por cliente)
+A -> DB : identidade pelo canal
+A -> M : extrai intenção e busca
+M --> A : campos
+A -> DB : leitura_modelo, atendimento, busca
+A --> Cliente : resposta
+alt lead qualificado e sem escalação
+  A -> R : handoff (única aresta entre agentes)
+  R -> DB : domínio, vínculo, agenda dos corretores
+  R -> DB : aprovacao aceite_corretor (expira_em, enviar_em no expediente)
+  R -> G : pausa
+  note over G : grafo parado na thread_id
+  Corretor -> G : aceita ou recusa pelo painel
+  G -> R : decisão no memo, nó re-executa
+  alt aceitou
+    R -> DB : vinculo_lead_corretor, log_evento
+  else recusou ou expirou
+    R -> DB : oferta ao próximo colocado
+    note over R : esgotadas as tentativas, escala para a equipe
+  end
+else escalação
+  A -> G : pausa para a equipe
+end
+@enduml

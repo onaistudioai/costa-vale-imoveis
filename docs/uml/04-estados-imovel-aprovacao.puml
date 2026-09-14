@@ -1,0 +1,33 @@
+@startuml estados-imovel-aprovacao
+title Estados do imóvel e da aprovação
+state "Imóvel · operacional (Curador)" as op {
+  [*] --> captado
+  captado --> em_preparacao
+  em_preparacao --> pronto
+  em_preparacao --> com_pendencia
+  com_pendencia --> pronto
+  em_preparacao --> reprovado
+}
+state "Imóvel · comercial (Guardião)" as com {
+  [*] --> disponivel
+  disponivel --> em_negociacao
+  em_negociacao --> disponivel : desistência
+  em_negociacao --> em_processo_venda
+  em_processo_venda --> fechado
+  disponivel --> arquivado
+}
+state "Imóvel · anúncio" as an {
+  [*] --> sem_anuncio
+  sem_anuncio --> no_ar : aprovação subir_anuncio
+  no_ar --> pausado
+  pausado --> no_ar
+  no_ar --> removido : aprovação derrubar_midia
+}
+state "Aprovação" as ap {
+  [*] --> pendente
+  pendente --> aprovado : pessoa aprova
+  pendente --> negado : pessoa nega, com motivo
+  pendente --> expirado : varredura, passou de expira_em
+}
+note bottom of an : no_ar exige pronto e disponivel\n(check no banco)
+@enduml

@@ -1,0 +1,29 @@
+@startuml sequencia-curador
+title Curador: laudo até anúncio
+actor Vendedor
+participant "1 Curador" as C
+participant Modelo as M
+participant Faixa as F
+participant Mesa as Me
+participant Gate as G
+database Banco as DB
+actor Equipe
+
+Vendedor -> C : laudo (estado, documentação, pendências)
+C -> M : extrai pendências e preço
+M --> C : ExtracaoLaudo
+C -> C : regra decide estado_operacional
+C -> DB : laudo, estado_operacional, log_evento
+opt ficou pronto e disponível
+  C -> F : classificar subir_anuncio
+  alt amarela
+    C -> Me : revisarSePreciso
+    Me --> C : Consolidado
+  end
+  C -> DB : aprovacao subir_anuncio
+  C -> G : pausa
+  Equipe -> G : aprova ou nega
+  G -> C : decisão, nó re-executa
+  C -> DB : anúncio no_ar (se aprovado)
+end
+@enduml

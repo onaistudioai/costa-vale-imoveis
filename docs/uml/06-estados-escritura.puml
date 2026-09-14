@@ -1,0 +1,14 @@
+@startuml estados-escritura
+title Etapas da escritura
+left to right direction
+[*] --> contrato_assinado
+contrato_assinado --> documentacao
+documentacao --> itbi_emitido
+itbi_emitido --> itbi_pago
+itbi_pago --> escritura_lavrada
+escritura_lavrada --> registro_protocolado
+registro_protocolado --> registro_concluido
+registro_concluido --> concluido
+contrato_assinado --> cancelado
+documentacao --> cancelado
+@enduml

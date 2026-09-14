@@ -1,0 +1,22 @@
+@startuml sequencia-guardiao
+title Guardião: documento até derrubar mídia
+actor Corretor
+participant "2 Guardião" as Gu
+participant Modelo as M
+participant Gate as G
+database Banco as DB
+actor Equipe
+
+Corretor -> Gu : documento da negociação
+Gu -> M : extrai etapa e valor
+M --> Gu : ExtracaoNegociacao
+Gu -> DB : estado_comercial, transacao, log_evento
+opt saiu do mercado com anúncio no ar
+  Gu -> DB : anúncios e custo acumulado
+  Gu -> DB : aprovacao derrubar_midia
+  Gu -> G : pausa
+  Equipe -> G : aprova ou nega
+  G -> Gu : decisão, nó re-executa
+  Gu -> DB : anúncio removido
+end
+@enduml

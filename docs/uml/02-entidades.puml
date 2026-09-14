@@ -1,0 +1,264 @@
+@startuml entidades
+title Entidades
+hide circle
+skinparam linetype ortho
+
+entity imovel {
+  * id_imovel : uuid <<PK>>
+  --
+  tipo : varchar
+  preco : numeric
+  endereco : text
+  bairro : varchar
+  cidade : varchar
+  id_proprietario : uuid <<FK>>
+  id_corretor_captador : uuid <<FK>>
+  estado_operacional : enum
+  estado_comercial : enum
+  estado_anuncio : enum
+  data_captacao : timestamp
+}
+entity anuncio {
+  * id_anuncio : uuid <<PK>>
+  --
+  id_imovel : uuid <<FK>>
+  canal : varchar
+  status : enum
+  midia_paga : boolean
+  custo_acumulado : numeric
+}
+entity laudo {
+  * id_laudo : uuid <<PK>>
+  --
+  id_imovel : uuid <<FK>>
+  texto_estado : text
+  texto_documentacao : text
+  texto_pendencias : text
+  extracao_estruturada : jsonb
+}
+entity cliente {
+  * id_cliente : uuid <<PK>>
+  --
+  nome : varchar
+  cpf_cnpj : text <<cifrado>>
+  telefone : text <<cifrado>>
+  email : text <<cifrado>>
+  email_indice : varchar <<HMAC>>
+  origem_canal : varchar
+}
+entity papel {
+  * id_papel : uuid <<PK>>
+  --
+  id_cliente : uuid <<FK>>
+  id_imovel : uuid <<FK>>
+  papel : enum
+  ativo : boolean
+}
+entity busca {
+  * id_busca : uuid <<PK>>
+  --
+  id_cliente : uuid <<FK>>
+  valor_min : numeric
+  valor_max : numeric
+  tipo_imovel : varchar
+  bairros_desejados : text[]
+  texto_original : text
+}
+entity identidade {
+  * id : uuid <<PK>>
+  --
+  id_cliente : uuid <<FK>>
+  canal : enum
+  identificador : text <<cifrado>>
+  identificador_indice : varchar <<UK>>
+  apelido : varchar
+  origem : enum
+}
+entity corretor {
+  * id_corretor : uuid <<PK>>
+  --
+  nome : varchar
+  telefone : text <<cifrado>>
+  comissao_percentual : numeric
+  regioes_atuacao : text[]
+  ativo : boolean
+}
+entity dominio_corretor {
+  * id : uuid <<PK>>
+  --
+  id_corretor : uuid <<FK>>
+  id_imovel : uuid <<FK>>
+  nivel : enum
+}
+entity vinculo_lead_corretor {
+  * id : uuid <<PK>>
+  --
+  id_cliente : uuid <<FK>>
+  id_corretor : uuid <<FK>>
+  ultima_interacao : timestamp
+  ativo : boolean
+}
+entity agenda {
+  * id_evento : uuid <<PK>>
+  --
+  id_corretor : uuid <<FK>>
+  id_imovel : uuid <<FK>>
+  id_cliente : uuid <<FK>>
+  inicio : timestamp
+  fim : timestamp
+  status : varchar
+}
+entity atendimento {
+  * id_atendimento : uuid <<PK>>
+  --
+  id_cliente : uuid <<FK>>
+  id_imovel : uuid <<FK>>
+  id_corretor : uuid <<FK>>
+  etapa : enum
+  etapa_maxima : enum
+  estado : enum
+  motivo_desfecho : text
+  prioridade : int
+  precisa_desfecho : boolean
+}
+entity transacao {
+  * id_transacao : uuid <<PK>>
+  --
+  id_imovel : uuid <<FK>>
+  id_cliente_comprador : uuid <<FK>>
+  id_corretor : uuid <<FK>>
+  tipo : varchar
+  valor_final : numeric
+  etapa : varchar
+  comissao_paga : boolean
+}
+entity contrato_locacao {
+  * id_contrato : uuid <<PK>>
+  --
+  id_imovel : uuid <<FK>>
+  id_inquilino : uuid <<FK>>
+  id_proprietario : uuid <<FK>>
+  valor_aluguel : numeric
+  dia_vencimento : int
+  indice : enum
+  taxa_administracao : numeric
+  estado : enum
+}
+entity parcela_aluguel {
+  * id_parcela : uuid <<PK>>
+  --
+  id_contrato : uuid <<FK>>
+  competencia : varchar
+  valor_base : numeric
+  valor_encargos : numeric
+  estado : enum
+  estagio_cobranca : int
+}
+entity processo_escritura {
+  * id_processo : uuid <<PK>>
+  --
+  id_imovel : uuid <<FK>>
+  id_transacao : uuid <<FK>>
+  id_comprador : uuid <<FK>>
+  id_vendedor : uuid <<FK>>
+  etapa : enum
+  etapa_desde : timestamp
+  matricula : varchar
+  valor_itbi : numeric
+}
+
+package "Trilha e controle (entidade + id_entidade, id_evento)" {
+  entity aprovacao {
+    * id : uuid <<PK>>
+    --
+    tipo : enum
+    entidade : varchar
+    id_entidade : uuid
+    estado : enum
+    faixa : enum
+    solicitado_por_agente : enum
+    thread_id : varchar
+    expira_em : timestamp
+    proposta : jsonb
+    decidido_por : varchar
+  }
+  entity log_evento {
+    * id : uuid <<PK>>
+    --
+    agente_origem : enum
+    entidade : varchar
+    id_entidade : uuid
+    campo : varchar
+    valor_anterior : text
+    valor_novo : text
+    aprovado_por : varchar
+  }
+  entity evento_processado {
+    * id_evento : uuid <<PK>>
+    --
+    tipo : varchar
+    agente : enum
+  }
+  entity leitura_modelo {
+    * id : uuid <<PK>>
+    --
+    agente : varchar
+    modelo : varchar
+    prompt_hash : varchar
+    saida : jsonb
+    erro : text
+    id_evento : uuid
+  }
+  entity mensagem_enviada {
+    * id : uuid <<PK>>
+    --
+    canal : varchar
+    destino : varchar
+    texto : text
+    estado : varchar
+  }
+}
+package "schema cerebro (sem FK para o cadastro)" {
+  entity nota {
+    * id : uuid <<PK>>
+    --
+    escopo : varchar
+    chave : varchar
+    texto : text
+    estado : enum
+    substitui : uuid
+  }
+}
+
+cliente ||--o{ papel
+imovel |o--o{ papel
+cliente |o--o{ imovel : proprietário
+corretor |o--o{ imovel : captou
+imovel ||--o{ anuncio
+imovel ||--o{ laudo
+cliente ||--o{ busca
+cliente ||--o{ identidade
+corretor ||--o{ dominio_corretor
+imovel ||--o{ dominio_corretor
+cliente ||--o{ vinculo_lead_corretor
+corretor ||--o{ vinculo_lead_corretor
+corretor ||--o{ agenda
+imovel |o--o{ agenda
+cliente |o--o{ agenda
+cliente ||--o{ atendimento
+imovel |o--o{ atendimento
+corretor |o--o{ atendimento
+imovel ||--o{ transacao
+cliente |o--o{ transacao
+corretor |o--o{ transacao
+imovel ||--o{ contrato_locacao
+cliente ||--o{ contrato_locacao : inquilino e proprietário
+contrato_locacao ||--o{ parcela_aluguel
+imovel ||--o{ processo_escritura
+transacao |o--o{ processo_escritura
+cliente |o--o{ processo_escritura : comprador e vendedor
+evento_processado |o..o{ aprovacao
+evento_processado |o..o{ log_evento
+evento_processado |o..o{ leitura_modelo
+nota |o..o| nota : substitui
+@enduml
