@@ -31,6 +31,32 @@ const MODELOS: Record<Tarefa, string> = {
   classificacao: "llama-3.1-8b-instant",
 };
 
+/**
+ * O plano gratuito do Groq tem teto de tokens por minuto, e o 429 diz quanto
+ * esperar ("try again in 7.5s"). Esperamos esse tempo e tentamos de novo.
+ *
+ * Com teto: espera maior que `esperaMax` não dorme, sobe o erro. A fila da
+ * operação não pode ficar parada em silêncio; o erro vai pra `leitura_modelo`
+ * e aparece em `/semanas`. Só 429 é repetido; qualquer outro erro sobe na hora.
+ */
+export async function comEspera<T>(
+  fn: () => Promise<T>,
+  { tentativas = 3, esperaMax = 15_000, dormir = (ms: number) => new Promise((r) => setTimeout(r, ms)) } = {},
+): Promise<T> {
+  for (let i = 1; ; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (i >= tentativas || !msg.includes("rate_limit")) throw e;
+      const pedido = /try again in (?:(\d+)m)?([\d.]+)s/.exec(msg);
+      const espera = pedido ? (Number(pedido[1] ?? 0) * 60 + Number(pedido[2])) * 1000 + 500 : 5_000;
+      if (espera > esperaMax) throw e;
+      await dormir(espera);
+    }
+  }
+}
+
 export function extratorGroq(
   tarefa: Tarefa = "extracao",
 ): Extrator & { modelo: string; tarefa: Tarefa } {
@@ -39,10 +65,12 @@ export function extratorGroq(
 
   const extrair: Extrator = async ({ schema, sistema, entrada }) => {
     const estruturado = modelo.withStructuredOutput(schema);
-    return (await estruturado.invoke([
-      { role: "system", content: sistema },
-      { role: "user", content: entrada },
-    ])) as never;
+    return (await comEspera(() =>
+      estruturado.invoke([
+        { role: "system", content: sistema },
+        { role: "user", content: entrada },
+      ]),
+    )) as never;
   };
 
   // O nome do modelo fica pendurado na função porque quem registra procedência

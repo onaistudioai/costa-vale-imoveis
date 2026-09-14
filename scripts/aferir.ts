@@ -1,6 +1,6 @@
 import { ExtracaoLaudo, SISTEMA } from "../src/agentes/curador";
 import { ExtracaoConversa, SISTEMA as SISTEMA_CONVERSA } from "../src/agentes/atendimento";
-import { extratorGroq } from "../src/agentes/modelo";
+import { comEspera, extratorGroq } from "../src/agentes/modelo";
 import { comProcedencia, versaoDoPrompt } from "../src/agentes/procedencia";
 import { registrarLeitura } from "../src/lib/leitura-db";
 import { concordanciaDoPainel } from "../src/lib/afericao-db";
@@ -38,20 +38,8 @@ import { pool } from "../src/lib/db";
  * esse 429 vira erro registrado em `leitura_modelo` — o que é o certo, porque
  * a fila da operação não pode ficar dormindo em silêncio.
  */
-async function comEspera<T>(fn: () => Promise<T>, tentativas = 4): Promise<T> {
-  for (let i = 1; ; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (i >= tentativas || !msg.includes("rate_limit")) throw e;
-      const pedido = /try again in ([\d.]+)s/.exec(msg);
-      const espera = pedido ? Number(pedido[1]) * 1000 + 500 : 20_000;
-      console.log(`       (teto de tokens do minuto — esperando ${Math.round(espera / 1000)}s)`);
-      await new Promise((r) => setTimeout(r, espera));
-    }
-  }
-}
+// A aferição pode esperar o minuto inteiro; a operação não (ver comEspera).
+const esperarMinuto = <T>(fn: () => Promise<T>) => comEspera(fn, { tentativas: 4, esperaMax: 65_000 });
 
 // --- Agente 1: o laudo de vistoria ---
 
@@ -76,7 +64,7 @@ console.log(`\n--- Agente 1 · prompt ${versaoDoPrompt(SISTEMA)} · ${CASOS.leng
 const resultados: Conferencia[] = [];
 
 for (const caso of CASOS) {
-  const e = (await comEspera(() =>
+  const e = (await esperarMinuto(() =>
     extrair({ schema: ExtracaoLaudo, sistema: SISTEMA, entrada: entradaDe(caso.laudo) }),
   )) as ExtracaoLaudo;
 
@@ -122,7 +110,7 @@ console.log(
 const conversas: ConferenciaConversa[] = [];
 
 for (const caso of CASOS_CONVERSA) {
-  const e = (await comEspera(() =>
+  const e = (await esperarMinuto(() =>
     extrairConversa({
       schema: ExtracaoConversa,
       sistema: SISTEMA_CONVERSA,
@@ -154,7 +142,7 @@ console.log(`\n--- Agente 2 · prompt ${versaoDoPrompt(SISTEMA_NEGOCIACAO)} · $
 
 const negociacoes: ConferenciaNegociacao[] = [];
 for (const caso of CASOS_NEGOCIACAO) {
-  const e = (await comEspera(() =>
+  const e = (await esperarMinuto(() =>
     extrairNegociacao({ schema: ExtracaoNegociacao, sistema: SISTEMA_NEGOCIACAO, entrada: caso.documento }),
   )) as ExtracaoNegociacao;
   const c = conferirNegociacao(caso, e);
@@ -175,7 +163,7 @@ console.log(`\n--- Agente 6 · prompt ${versaoDoPrompt(SISTEMA_ALTERADOR)} · ${
 
 const alteracoes: ConferenciaAlteracao[] = [];
 for (const caso of CASOS_ALTERACAO) {
-  const p = (await comEspera(() =>
+  const p = (await esperarMinuto(() =>
     extrairAlteracao({ schema: PedidoAlteracao, sistema: SISTEMA_ALTERADOR, entrada: caso.texto }),
   )) as PedidoAlteracao;
   const c = conferirAlteracao(caso, p);

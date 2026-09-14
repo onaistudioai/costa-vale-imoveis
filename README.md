@@ -162,6 +162,7 @@ está documentado, não escondido:
   vira candidata a caso de referência (`npm run propor-casos`) — mas nenhuma
   nota nem caso vira ajuste sem uma pessoa confirmar.
 - O Groq gratuito tem limite de tokens por minuto. Rodar muitas leituras seguidas
-  (o `aferir`, por exemplo) pode estourar, e o grafo não tenta de novo. O plano está em `docs/PLANO_CEREBRO.md`.
+  (o `aferir`, por exemplo) pode estourar. O sistema espera o que o Groq pede
+  quando é até 15 segundos; acima disso a leitura falha e fica registrada. O plano está em `docs/PLANO_CEREBRO.md`.
 - Os números de calibração (`docs/calibracao.json`) são chutes iniciais que
   precisam de operação real para afinar.
